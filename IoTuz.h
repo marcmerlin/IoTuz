@@ -27,6 +27,8 @@
 #include <Adafruit_Sensor.h>
 #include <Adafruit_ADXL345_U.h>
 
+// Touch screen https://github.com/PaulStoffregen/XPT2046_Touchscreen
+#include <XPT2046_Touchscreen.h>
 
 // https://github.com/CCHS-Melbourne/iotuz-esp32-hardware/wiki has hardware mapping details
 /*
@@ -100,9 +102,17 @@ BME230: 0x77 (Temp/Humidity/Pressure)
 #define ENCODERA_PIN 15
 #define ENCODERB_PIN 36
 
+// Touch screen select is on port expander line 6, not directly connected, so the library
+// cannot toggle it directly. It however requires a CS pin, so I'm giving it 33, a spare IO
+// pin so that it doesn't break anything else.
+// CS is then toggled manually before talking to the touch screen.
+#define TS_CS_PIN  33
+
 extern Adafruit_ILI9341 tft;
 extern Adafruit_NeoPixel pixels; 
 extern Adafruit_ADXL345_Unified accel;
+extern XPT2046_Touchscreen ts;
+
 
 
 typedef enum {
@@ -120,13 +130,17 @@ class IoTuz {
     // tft_width, tft_height, calculated in setup after tft init
     uint16_t tftw, tfth;
 
+    // Buffer to store strings going to be printed on tft
+    char tft_str[64];
+
     void i2cexp_clear_bits(uint8_t);
     void i2cexp_set_bits(uint8_t);
     uint8_t i2cexp_read();
-    void screen_bl(bool);
     int16_t read_encoder();
     bool encoder_changed();
     ButtState read_encoder_button();
+    TS_Point get_touch();
+    void screen_bl(bool);
     void begin();
 
   private:

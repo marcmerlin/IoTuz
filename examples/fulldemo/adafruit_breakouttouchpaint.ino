@@ -41,11 +41,7 @@ void touchpaint_setup(void) {
 void touchpaint_loop()
 {
   // Retrieve a point  
-  iotuz.i2cexp_clear_bits(I2CEXP_TOUCH_CS);
-
-  TS_Point p = ts.getPoint();
-  iotuz.i2cexp_set_bits(I2CEXP_TOUCH_CS);
-
+  TS_Point p = iotuz.get_touch();
   
   Serial.print("X = "); Serial.print(p.x);
   Serial.print("\tY = "); Serial.print(p.y);
@@ -58,8 +54,8 @@ void touchpaint_loop()
   }
   
   // Scale from ~0->1000 to tft.width using the calibration #'s
-  p.x = map(p.x, TS_MINX, TS_MAXX, 0, tft.width());
-  p.y = map(p.y, TS_MINY, TS_MAXY, 0, tft.height());
+  p.x = map(p.x, TS_MINX, TS_MAXX, 0, iotuz.tftw);
+  p.y = map(p.y, TS_MINY, TS_MAXY, 0, iotuz.tfth);
 
   Serial.print("("); Serial.print(p.x);
   Serial.print(", "); Serial.print(p.y);

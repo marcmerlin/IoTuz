@@ -49,10 +49,10 @@ easier when you get a crash dump on your serial port:
 
 Required External libraries
 ---------------------------
-- Adafruit_GFX 
-- Adafruit_ILI9341
+- Adafruit_GFX (from adafruit or https://github.com/espressif/Adafruit-GFX-Library)
+- Adafruit_ILI9341 (from adafruit or https://github.com/espressif/Adafruit_ILI9341)
 - Adafruit_NeoPixel
 - Adafruit_Sensor
 - Adafruit_ADXL345_U
-- XPT2046_Touchscreen
+- XPT2046_Touchscreen - https://github.com/PaulStoffregen/XPT2046_Touchscreen
 

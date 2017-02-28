@@ -25,23 +25,6 @@ uint16_t joyValueX;
 uint16_t joyValueY;
 bool joyBtnValue;
 
-
-// Buffer to store strings going to be printed on tft
-char tft_str[41];
-
-// Touch screen
-#include "XPT2046_Touchscreen.h"
-// Touch screen select is on port expander line 6, not directly connected, so the library
-// cannot toggle it directly. It however requires a CS pin, so I'm giving it 33, a spare IO
-// pin so that it doesn't break anything else.
-#define TS_CS_PIN  33
-// similarly, the interrupt pin is connected to the port expander, so the library can't use it
-// I'm told it is possible to pass an interrupt through the IO expander, but I'm not doing this yet.
-//#define TS_IRQ_PIN  0
-
-XPT2046_Touchscreen ts(TS_CS_PIN);  // Param 2 - NULL - No interrupts
-//XPT2046_Touchscreen ts(TS_CS_PIN, TS_IRQ_PIN);  // Param 2 - Touch IRQ Pin - interrupt enabled polling
-
 // How many options to display in the rectangle screen
 #define NHORIZ 5
 #define NVERT 5
@@ -160,18 +143,6 @@ void tftprint(uint16_t x, uint16_t y, uint8_t maxlength, char *text) {
     tft.println(text);
 }
 
-TS_Point get_touch() {
-    // Clear (i.e. set) CS for TS before talking to it
-    iotuz.i2cexp_clear_bits(I2CEXP_TOUCH_CS);
-    // Calling getpoint calls SPI.beginTransaction with a speed of only 2MHz, so we need to
-    // reset the speed to something faster before talking to the screen again.
-    TS_Point p = ts.getPoint();
-    // Then disable it again so that talking SPI to LCD doesn't reach TS
-    iotuz.i2cexp_set_bits(I2CEXP_TOUCH_CS);
-
-    return p;
-}
-
 void touchcoord2pixelcoord(uint16_t *pixel_x, uint16_t *pixel_y) {
     // Pressure goes from 1000 to 2200 with a stylus but is unreliable,
     // 3000 if you mash a finger in, let's say 2048 range
@@ -195,7 +166,7 @@ void touchcoord2pixelcoord(uint16_t *pixel_x, uint16_t *pixel_y) {
 void finger_draw() {
     uint16_t color_pressure, color;
     static uint8_t update_coordinates = 0;
-    TS_Point p = get_touch();
+    TS_Point p = iotuz.get_touch();
 
     if (p.z < MINPRESSURE || p.z > MAXPRESSURE) {
 	// If we were touching the screen, and we release, show coordinates next time around.
@@ -209,10 +180,10 @@ void finger_draw() {
     // Writing coordinates every time is too slow, write less often
     if (update_coordinates == 32) {
 	update_coordinates = 0;
-	sprintf(tft_str, "%d", p.x);
-	tftprint(2, 0, 4, tft_str);
-	sprintf(tft_str, "%d", p.y);
-	tftprint(2, 1, 4, tft_str);
+	sprintf(iotuz.tft_str, "%d", p.x);
+	tftprint(2, 0, 4, iotuz.tft_str);
+	sprintf(iotuz.tft_str, "%d", p.y);
+	tftprint(2, 1, 4, iotuz.tft_str);
     }
 
     // Colors are 16 bits, 5 bit: red, 6 bits: green, 5 bits: blue
@@ -257,10 +228,10 @@ void joystick_draw() {
     // Do not write the cursor values too often, it's too slow
     if (!update_cnt++ % 16)
     {
-	sprintf(tft_str, "%d > %d", joyValueX, pixel_x);
-	tftprint(2, 0, 10, tft_str);
-	sprintf(tft_str, "%d > %d", joyValueY, pixel_y);
-	tftprint(2, 1, 10, tft_str);
+	sprintf(iotuz.tft_str, "%d > %d", joyValueX, pixel_x);
+	tftprint(2, 0, 10, iotuz.tft_str);
+	sprintf(iotuz.tft_str, "%d > %d", joyValueY, pixel_y);
+	tftprint(2, 1, 10, iotuz.tft_str);
     }
 }
 
@@ -270,8 +241,8 @@ void rotary_encoder() {
     ButtState encoder_button = iotuz.read_encoder_button();
 
     if (iotuz.encoder_changed() || encoder_button == ENC_PUSHED || encoder_button == ENC_RELEASED) {
-	sprintf(tft_str, "%d/%d", encoder_button, encoder);
-	tftprint(0, 0, 10, tft_str);
+	sprintf(iotuz.tft_str, "%d/%d", encoder_button, encoder);
+	tftprint(0, 0, 10, iotuz.tft_str);
     }
 }
 
@@ -295,10 +266,10 @@ void joystick_draw_relative() {
 
     // Do not write the cursor values too often, it's too slow
     if (!(update_cnt++ % 32)) {
-	sprintf(tft_str, "%.1f (%d) > %d", move_x, intmove_x, int(pixel_x));
-	tftprint(2, 0, 16, tft_str);                        
-	sprintf(tft_str, "%.1f (%d) > %d", move_y, intmove_y, int(pixel_y));
-	tftprint(2, 1, 16, tft_str);
+	sprintf(iotuz.tft_str, "%.1f (%d) > %d", move_x, intmove_x, int(pixel_x));
+	tftprint(2, 0, 16, iotuz.tft_str);                        
+	sprintf(iotuz.tft_str, "%.1f (%d) > %d", move_y, intmove_y, int(pixel_y));
+	tftprint(2, 1, 16, iotuz.tft_str);
     }
 }
 
@@ -318,10 +289,10 @@ void accel_draw() {
 
     // Do not write the cursor values too often, it's too slow
     if (!(update_cnt++ % 32)) {
-	sprintf(tft_str, "%.1f > %.1f", accel_x, int(pixel_x));
-	tftprint(2, 0, 10, tft_str);
-	sprintf(tft_str, "%.1f > %.1f", accel_y, int(pixel_y));
-	tftprint(2, 1, 10, tft_str);
+	sprintf(iotuz.tft_str, "%.1f > %.1f", accel_x, int(pixel_x));
+	tftprint(2, 0, 10, iotuz.tft_str);
+	sprintf(iotuz.tft_str, "%.1f > %.1f", accel_y, int(pixel_y));
+	tftprint(2, 1, 10, iotuz.tft_str);
     }
 }
 
@@ -347,7 +318,7 @@ void led_color_selector() {
     uint8_t colnum, color;
     static uint8_t RGB[3] = {255, 255, 255};
 
-    TS_Point p = get_touch();
+    TS_Point p = iotuz.get_touch();
 
     if (p.z < MINPRESSURE || p.z > MAXPRESSURE) {
 	return;
@@ -361,20 +332,20 @@ void led_color_selector() {
     uint16_t pixel_x = p.x, pixel_y = p.y;
     touchcoord2pixelcoord(&pixel_x, &pixel_y);
 
-//    sprintf(tft_str, "%d", pixel_x);
-//    tftprint(2, 0, 3, tft_str);
-//    sprintf(tft_str, "%d", pixel_y);
-//    tftprint(2, 1, 3, tft_str);
-    sprintf(tft_str, "%.2x/%.2x/%.2x", RGB[0], RGB[1], RGB[2]);
-    tftprint(0, 0, 8, tft_str);
+//    sprintf(iotuz.tft_str, "%d", pixel_x);
+//    tftprint(2, 0, 3, iotuz.tft_str);
+//    sprintf(iotuz.tft_str, "%d", pixel_y);
+//    tftprint(2, 1, 3, iotuz.tft_str);
+    sprintf(iotuz.tft_str, "%.2x/%.2x/%.2x", RGB[0], RGB[1], RGB[2]);
+    tftprint(0, 0, 8, iotuz.tft_str);
 
     if (pixel_y < 80) colnum = 0;
     else if (pixel_y < 160) colnum = 1;
     else if (pixel_y < 240) colnum = 2;
     
     color = map(pixel_x, 0, 320, 0, 255);
-//    sprintf(tft_str, "col %d: %2x", colnum, color);
-//    tftprint(0, 3, 9, tft_str);
+//    sprintf(iotuz.tft_str, "col %d: %2x", colnum, color);
+//    tftprint(0, 3, 9, iotuz.tft_str);
     tft.fillRect(0, 80*(colnum+1)-5, 320, 4, ILI9341_BLACK);
     tft.fillTriangle(pixel_x, 80*(colnum+1)-5, pixel_x-2, 80*(colnum+1)-2, pixel_x+2, 80*(colnum+1)-2, ILI9341_WHITE);
     
@@ -493,7 +464,7 @@ uint8_t get_selection(void) {
 
     Serial.println("Waiting for finger touch to select option");
     do {
-	p = get_touch();
+	p = iotuz.get_touch();
     // at boot, I get a fake touch with pressure 1030
     } while ( p.z < 1060);
 
@@ -540,6 +511,7 @@ void loop(void) {
 	break;
     case TOUCHPAINT:
 	// First time around the loop, draw a color selection circle
+	// FIXME, touch screen is not currently working
 	if (need_select) touchpaint_setup();
 	touchpaint_loop();
 	break;

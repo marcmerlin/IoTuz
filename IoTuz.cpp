@@ -34,6 +34,9 @@ Adafruit_ADXL345_Unified accel = Adafruit_ADXL345_Unified(12345);
 // #define CONFIG_DISABLE_HAL_LOCKS 1
 // Use with caution, this may cause unknown issues
 
+// Touch screen
+XPT2046_Touchscreen ts(TS_CS_PIN);  // Param 2 - NULL - No interrupts)
+
 void read_encoder_ISR() 
 {
     static uint8_t old_AB = 0;
@@ -138,6 +141,18 @@ ButtState IoTuz::read_encoder_button()
 // True turns the BL on
 void IoTuz::screen_bl(bool state) {
     state ? i2cexp_clear_bits(I2CEXP_LCD_BL_CTR) : i2cexp_set_bits(I2CEXP_LCD_BL_CTR);
+}
+
+TS_Point IoTuz::get_touch() {
+    // Clear (i.e. set) CS for TS before talking to it
+    i2cexp_clear_bits(I2CEXP_TOUCH_CS);
+    // Calling getpoint calls SPI.beginTransaction with a speed of only 2MHz, so we need tohttps://github.com/marcmerlin/IoTuz
+    // reset the speed to something faster before talking to the screen again.https://github.com/marcmerlin/IoTuz
+    TS_Point p = ts.getPoint();
+    // Then disable it again so that talking SPI to LCD doesn't reach TS
+    i2cexp_set_bits(I2CEXP_TOUCH_CS);
+
+    return p;
 }
 
 IoTuz::IoTuz()

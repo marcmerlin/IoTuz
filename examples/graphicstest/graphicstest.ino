@@ -96,30 +96,10 @@ Rounded rects (filled)   5266524
 
 
 void setup() {
-  Serial.begin(115200);
-  Serial.println("Serial Begin"); 
-
-  Wire.begin();
-#ifdef hwspi
-  SPI.begin(SPI_CLK, SPI_MISO, SPI_MOSI);
-#endif
-
-  // Turn on LCD backlight
-  iotuz.i2cexp_clear_bits(I2CEXP_LCD_BL_CTR);
+  iotuz.begin(); 
+  // backlight is off by default, turn it on.
+  iotuz.screen_bl(true);
  
-  tft.begin();
-  // read diagnostics (optional but can help debug problems)
-  uint8_t x = tft.readcommand8(ILI9341_RDMODE);
-  Serial.print("Display Power Mode: 0x"); Serial.println(x, HEX);
-  x = tft.readcommand8(ILI9341_RDMADCTL);
-  Serial.print("MADCTL Mode: 0x"); Serial.println(x, HEX);
-  x = tft.readcommand8(ILI9341_RDPIXFMT);
-  Serial.print("Pixel Format: 0x"); Serial.println(x, HEX);
-  x = tft.readcommand8(ILI9341_RDIMGFMT);
-  Serial.print("Image Format: 0x"); Serial.println(x, HEX);
-  x = tft.readcommand8(ILI9341_RDSELFDIAG);
-  Serial.print("Self Diagnostic: 0x"); Serial.println(x, HEX); 
-  
   Serial.println(F("Benchmark                Time (microseconds)"));
   delay(10);
   Serial.print(F("Screen fill              "));

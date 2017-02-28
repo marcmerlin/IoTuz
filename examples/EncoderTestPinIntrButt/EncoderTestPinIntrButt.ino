@@ -11,7 +11,6 @@ IoTuz iotuz = IoTuz();
 
 // the setup routine runs once when you press reset:
 void setup() {
-    // initialize serial communication at 9600 bits per second:
     iotuz.begin();
 
     Serial.println("This driver works reliably on IoTuz, but generates 4 rotation clicks");
