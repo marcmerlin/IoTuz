@@ -201,8 +201,8 @@ void joystick_draw() {
     // 4096 -> 320 (divide by 12.8) and -> 240 (divide by 17)
     // Sadly on my board, the middle is 1785/1850 and not 2048/2048
     read_joystick();
-    uint16_t pixel_x = joyValueX/12.8;
-    uint16_t pixel_y = joyValueY/17;
+    uint16_t pixel_x = joyValueX/12.8+1;
+    uint16_t pixel_y = joyValueY/17+1;
     tft.fillCircle(pixel_x, pixel_y, 2, ILI9341_WHITE);
 
     // Do not write the cursor values too often, it's too slow
@@ -241,8 +241,9 @@ void joystick_draw_relative() {
     if (joyValueY > 1700) intmove_y = map(constrain(joyValueY, 2300, 4096), 2300, 4096, 0, 5);
 
     tft.fillCircle(int(pixel_x), int(pixel_y), 2, tenbitstocolor(update_cnt % 1024));
-    pixel_x = constrain(pixel_x + move_x, 0, 319);
-    pixel_y = constrain(pixel_y + move_y, 0, 239);
+    // don't go all the way to the border, or the drawing will wrap to the other side of the screen.
+    pixel_x = constrain(pixel_x + move_x, 2, 318);
+    pixel_y = constrain(pixel_y + move_y, 2, 238);
 
     // Do not write the cursor values too often, it's too slow
     if (!(update_cnt++ % 32)) {
@@ -264,8 +265,9 @@ void accel_draw() {
     float accel_y = event.acceleration.y - 2;
 
     tft.fillCircle(int(pixel_x), int(pixel_y), 2, tenbitstocolor(update_cnt % 1024));
-    pixel_x = constrain(pixel_x + accel_x, 0, 319);
-    pixel_y = constrain(pixel_y + accel_y, 0, 239);
+    // don't go all the way to the border, or the drawing will wrap to the other side of the screen.
+    pixel_x = constrain(pixel_x + accel_x, 2, 318);
+    pixel_y = constrain(pixel_y + accel_y, 2, 238);
 
     // Do not write the cursor values too often, it's too slow
     if (!(update_cnt++ % 32)) {
@@ -363,7 +365,7 @@ void scan_buttons(bool *need_select) {
     if (butt_state & I2CEXP_A_BUT && !butA)
     {
 	butA = true;
-	reset_tft();
+	iotuz.reset_tft();
 	reset_textcoord();
 	tftprint(0, 2, 0, "But A");
     }
@@ -395,13 +397,6 @@ void scan_buttons(bool *need_select) {
 	butEnc = false;
 	tftprint(0, 4, 7, "");
     }
-}
-
-void reset_tft() {
-    tft.setRotation(3);
-    tft.fillScreen(ILI9341_BLACK);
-    tft.setTextColor(ILI9341_WHITE);
-    tft.setTextSize(1);
 }
 
 void reset_textcoord() {
@@ -467,7 +462,7 @@ void loop(void) {
     static uint8_t select;
     
     if (need_select) {
-	reset_tft();
+	iotuz.reset_tft();
 	draw_choices();
 	select = get_selection();
 	Serial.print("Got menu selection #");

@@ -140,6 +140,8 @@ class IoTuz {
     bool encoder_changed();
     ButtState read_encoder_button();
     void screen_bl(bool);
+    void reset_tft();
+    void tftprint(uint16_t, uint16_t, uint8_t, char *);
     TS_Point get_touch();
     void touchcoord2pixelcoord(uint16_t *, uint16_t *);
     void begin();

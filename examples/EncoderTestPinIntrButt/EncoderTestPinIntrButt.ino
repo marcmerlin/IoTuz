@@ -12,17 +12,24 @@ IoTuz iotuz = IoTuz();
 // the setup routine runs once when you press reset:
 void setup() {
     iotuz.begin();
+    iotuz.reset_tft();
+    // backlight is off by default, turn it on.
+    iotuz.screen_bl(true);
 
     Serial.println("This driver works reliably on IoTuz, but generates 4 rotation clicks");
     Serial.println("per click you can feel in the knob. This is due the the hardware and not a bug");
+    iotuz.tftprint(0, 0, 0, "Encoder: ");
+    iotuz.tftprint(0, 1, 0, "Button: ");
 }
 
 // the loop routine runs over and over again forever:
 void loop() {
 
     if (iotuz.encoder_changed()) {
+	sprintf(iotuz.tft_str, "%d", iotuz.read_encoder());
 	Serial.print ("Encoder val: ");
-	Serial.println (iotuz.read_encoder());
+	Serial.println (iotuz.tft_str);
+	iotuz.tftprint(9, 0, 5, iotuz.tft_str);
     }
 
     // There is no debouncing here, delay at the end will help a bit, but is not foolproof
@@ -33,12 +40,14 @@ void loop() {
 	break;
     case ENC_PUSHED:
 	Serial.println("Encoder Button Just Pushed");
+	iotuz.tftprint(8, 1, 8, "Pushed");
 	break;
     case ENC_UP:
 	//Serial.println("Encoder Button Up");
 	break;
     case ENC_RELEASED:
 	Serial.println("Encoder Button Just Released");
+	iotuz.tftprint(8, 1, 6, "Released");
 	break;
     }
 

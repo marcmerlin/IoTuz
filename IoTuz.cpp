@@ -118,6 +118,8 @@ bool IoTuz::encoder_changed() {
     return false;
 }
 
+// There is no separate method to return button state changed
+// because this one already does it, look for PUSHED and RELEASED
 ButtState IoTuz::read_encoder_button() 
 {
     static bool butEnc = false;
@@ -141,6 +143,20 @@ ButtState IoTuz::read_encoder_button()
 // True turns the BL on
 void IoTuz::screen_bl(bool state) {
     state ? i2cexp_clear_bits(I2CEXP_LCD_BL_CTR) : i2cexp_set_bits(I2CEXP_LCD_BL_CTR);
+}
+
+void IoTuz::reset_tft() {
+    tft.setRotation(3);
+    tft.fillScreen(ILI9341_BLACK);
+    tft.setTextColor(ILI9341_WHITE);
+    tft.setTextSize(1);
+}
+
+// maxlength is the maximum number of characters that need to be deleted before writing on top
+void IoTuz::tftprint(uint16_t x, uint16_t y, uint8_t maxlength, char *text) {
+    if (maxlength > 0) tft.fillRect(x*6, y*8, maxlength*6, 8, ILI9341_BLACK);
+    tft.setCursor(x*6, y*8);
+    tft.println(text);
 }
 
 TS_Point IoTuz::get_touch() {
