@@ -143,26 +143,6 @@ void tftprint(uint16_t x, uint16_t y, uint8_t maxlength, char *text) {
     tft.println(text);
 }
 
-void touchcoord2pixelcoord(uint16_t *pixel_x, uint16_t *pixel_y) {
-    // Pressure goes from 1000 to 2200 with a stylus but is unreliable,
-    // 3000 if you mash a finger in, let's say 2048 range
-    // Colors are 16 bits, so multiply pressure by 32 to get a color range from pressure
-    // X goes from 320 to 3900 (let's say 3600), Y goes from 200 to 3800 (let's say 3600 too)
-    // each X pixel is 11.25 dots of resolution on digitizer, and 15 dots for Y.
-    Serial.print("Converted touch coordinates ");
-    Serial.print(*pixel_x);
-    Serial.print("x");
-    Serial.print(*pixel_y);
-    //*pixel_x = constrain((*pixel_x-320)/11.25, 0, 319);
-    //*pixel_y = constrain((*pixel_y-200)/15, 0, 239);
-    *pixel_x = map(*pixel_x, TS_MINX, TS_MAXX, 0, tftw);
-    *pixel_y = map(*pixel_y, TS_MINY, TS_MAXY, 0, tfth);
-    Serial.print(" to pixel coordinates ");
-    Serial.print(*pixel_x);
-    Serial.print("x");
-    Serial.println(*pixel_y);
-}
-
 void finger_draw() {
     uint16_t color_pressure, color;
     static uint8_t update_coordinates = 0;
@@ -175,7 +155,7 @@ void finger_draw() {
     }
 
     uint16_t pixel_x = p.x, pixel_y = p.y;
-    touchcoord2pixelcoord(&pixel_x, &pixel_y);
+    iotuz.touchcoord2pixelcoord(&pixel_x, &pixel_y);
 
     // Writing coordinates every time is too slow, write less often
     if (update_coordinates == 32) {
@@ -330,7 +310,7 @@ void led_color_selector() {
     pixels.show();
 
     uint16_t pixel_x = p.x, pixel_y = p.y;
-    touchcoord2pixelcoord(&pixel_x, &pixel_y);
+    iotuz.touchcoord2pixelcoord(&pixel_x, &pixel_y);
 
 //    sprintf(iotuz.tft_str, "%d", pixel_x);
 //    tftprint(2, 0, 3, iotuz.tft_str);
@@ -469,7 +449,7 @@ uint8_t get_selection(void) {
     } while ( p.z < 1060);
 
     uint16_t pixel_x = p.x, pixel_y = p.y;
-    touchcoord2pixelcoord(&pixel_x, &pixel_y);
+    iotuz.touchcoord2pixelcoord(&pixel_x, &pixel_y);
 
     x = pixel_x/(tftw/NHORIZ);
     y = pixel_y/(tfth/NVERT);
