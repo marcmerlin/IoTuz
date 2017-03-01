@@ -136,13 +136,6 @@ void lcd_test(LCDtest choice) {
     }
 }
 
-// maxlength is the maximum number of characters that need to be deleted before writing on top
-void tftprint(uint16_t x, uint16_t y, uint8_t maxlength, char *text) {
-    if (maxlength > 0) tft.fillRect(x*6, y*8, maxlength*6, 8, ILI9341_BLACK);
-    tft.setCursor(x*6, y*8);
-    tft.println(text);
-}
-
 void finger_draw() {
     uint16_t color_pressure, color;
     static uint8_t update_coordinates = 0;
@@ -161,9 +154,9 @@ void finger_draw() {
     if (update_coordinates == 32) {
 	update_coordinates = 0;
 	sprintf(iotuz.tft_str, "%d", p.x);
-	tftprint(2, 0, 4, iotuz.tft_str);
+	iotuz.tftprint(2, 0, 4, iotuz.tft_str);
 	sprintf(iotuz.tft_str, "%d", p.y);
-	tftprint(2, 1, 4, iotuz.tft_str);
+	iotuz.tftprint(2, 1, 4, iotuz.tft_str);
     }
 
     // Colors are 16 bits, 5 bit: red, 6 bits: green, 5 bits: blue
@@ -209,9 +202,9 @@ void joystick_draw() {
     if (!update_cnt++ % 16)
     {
 	sprintf(iotuz.tft_str, "%d > %d", joyValueX, pixel_x);
-	tftprint(2, 0, 10, iotuz.tft_str);
+	iotuz.tftprint(2, 0, 10, iotuz.tft_str);
 	sprintf(iotuz.tft_str, "%d > %d", joyValueY, pixel_y);
-	tftprint(2, 1, 10, iotuz.tft_str);
+	iotuz.tftprint(2, 1, 10, iotuz.tft_str);
     }
 }
 
@@ -222,7 +215,7 @@ void rotary_encoder() {
 
     if (iotuz.encoder_changed() || encoder_button == ENC_PUSHED || encoder_button == ENC_RELEASED) {
 	sprintf(iotuz.tft_str, "%d/%d", encoder_button, encoder);
-	tftprint(0, 0, 10, iotuz.tft_str);
+	iotuz.tftprint(0, 0, 10, iotuz.tft_str);
     }
 }
 
@@ -248,9 +241,9 @@ void joystick_draw_relative() {
     // Do not write the cursor values too often, it's too slow
     if (!(update_cnt++ % 32)) {
 	sprintf(iotuz.tft_str, "%.1f (%d) > %d", move_x, intmove_x, int(pixel_x));
-	tftprint(2, 0, 16, iotuz.tft_str);                        
+	iotuz.tftprint(2, 0, 16, iotuz.tft_str);                        
 	sprintf(iotuz.tft_str, "%.1f (%d) > %d", move_y, intmove_y, int(pixel_y));
-	tftprint(2, 1, 16, iotuz.tft_str);
+	iotuz.tftprint(2, 1, 16, iotuz.tft_str);
     }
 }
 
@@ -272,9 +265,9 @@ void accel_draw() {
     // Do not write the cursor values too often, it's too slow
     if (!(update_cnt++ % 32)) {
 	sprintf(iotuz.tft_str, "%.1f > %.1f", accel_x, int(pixel_x));
-	tftprint(2, 0, 10, iotuz.tft_str);
+	iotuz.tftprint(2, 0, 10, iotuz.tft_str);
 	sprintf(iotuz.tft_str, "%.1f > %.1f", accel_y, int(pixel_y));
-	tftprint(2, 1, 10, iotuz.tft_str);
+	iotuz.tftprint(2, 1, 10, iotuz.tft_str);
     }
 }
 
@@ -315,11 +308,11 @@ void led_color_selector() {
     iotuz.touchcoord2pixelcoord(&pixel_x, &pixel_y);
 
 //    sprintf(iotuz.tft_str, "%d", pixel_x);
-//    tftprint(2, 0, 3, iotuz.tft_str);
+//    iotuz.tftprint(2, 0, 3, iotuz.tft_str);
 //    sprintf(iotuz.tft_str, "%d", pixel_y);
-//    tftprint(2, 1, 3, iotuz.tft_str);
+//    iotuz.tftprint(2, 1, 3, iotuz.tft_str);
     sprintf(iotuz.tft_str, "%.2x/%.2x/%.2x", RGB[0], RGB[1], RGB[2]);
-    tftprint(0, 0, 8, iotuz.tft_str);
+    iotuz.tftprint(0, 0, 8, iotuz.tft_str);
 
     if (pixel_y < 80) colnum = 0;
     else if (pixel_y < 160) colnum = 1;
@@ -327,7 +320,7 @@ void led_color_selector() {
     
     color = map(pixel_x, 0, 320, 0, 255);
 //    sprintf(iotuz.tft_str, "col %d: %2x", colnum, color);
-//    tftprint(0, 3, 9, iotuz.tft_str);
+//    iotuz.tftprint(0, 3, 9, iotuz.tft_str);
     tft.fillRect(0, 80*(colnum+1)-5, 320, 4, ILI9341_BLACK);
     tft.fillTriangle(pixel_x, 80*(colnum+1)-5, pixel_x-2, 80*(colnum+1)-2, pixel_x+2, 80*(colnum+1)-2, ILI9341_WHITE);
     
@@ -367,17 +360,17 @@ void scan_buttons(bool *need_select) {
 	butA = true;
 	iotuz.reset_tft();
 	reset_textcoord();
-	tftprint(0, 2, 0, "But A");
+	iotuz.tftprint(0, 2, 0, "But A");
     }
     if (!(butt_state & I2CEXP_A_BUT) && butA)
     {
 	butA = false;
-	tftprint(0, 2, 5, "");
+	iotuz.tftprint(0, 2, 5, "");
     }
     if (butt_state & I2CEXP_B_BUT && !butB)
     {
 	butB = true;
-	tftprint(0, 3, 0, "But B");
+	iotuz.tftprint(0, 3, 0, "But B");
 	*need_select = true;
     }
     if (!(butt_state & I2CEXP_B_BUT) && butB)
@@ -385,17 +378,17 @@ void scan_buttons(bool *need_select) {
 	butB = false;
 	// When changing modes, this could delete a block over a new mode
 	// that draws a background.
-	//tftprint(0, 3, 5, "");
+	//iotuz.tftprint(0, 3, 5, "");
     }
     if (butt_state & I2CEXP_ENC_BUT && !butEnc)
     {
 	butEnc = true;
-	tftprint(0, 4, 0, "Enc But");
+	iotuz.tftprint(0, 4, 0, "Enc But");
     }
     if (!(butt_state & I2CEXP_ENC_BUT) && butEnc)
     {
 	butEnc = false;
-	tftprint(0, 4, 7, "");
+	iotuz.tftprint(0, 4, 7, "");
     }
 }
 
