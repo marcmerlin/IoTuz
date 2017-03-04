@@ -13,7 +13,7 @@ Supported hardware:
 - Rotary Encoder via interrupt driven driver
 - Support for A and B buttons "hidden" behind the I2C IO multiplexer
 - Joystick
-- Color LEDs (requires a pach I wrote for the adafruit library)
+- Color LEDs (requires a patch I wrote for the adafruit library)
   https://github.com/adafruit/Adafruit_NeoPixel/pull/125
 - Accelerometer
 - IO expander (pcf8574)
