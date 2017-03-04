@@ -194,8 +194,9 @@ void joystick_draw() {
     // 4096 -> 320 (divide by 12.8) and -> 240 (divide by 17)
     // Sadly on my board, the middle is 1785/1850 and not 2048/2048
     read_joystick();
-    uint16_t pixel_x = joyValueX/12.8+1;
-    uint16_t pixel_y = joyValueY/17+1;
+    // Add 2 because we don't want to write at 0 or it'll wrap to other side
+    uint16_t pixel_x = joyValueX/12.8+2;
+    uint16_t pixel_y = joyValueY/17+2;
     tft.fillCircle(pixel_x, pixel_y, 2, ILI9341_WHITE);
 
     // Do not write the cursor values too often, it's too slow
