@@ -263,6 +263,15 @@ void IoTuz::begin()
     Serial.print(" x "); Serial.println(tfth);
     Serial.println(F("Done!"));
 
+    // Init LEDs to very dark (show they work, but don't blind)
+    pixels.begin();
+    // This first pixelcolor is ignored, not sure why
+    pixels.setPixelColor(0, 10, 10, 10);
+    pixels.setPixelColor(1, 5, 5, 5);
+    pixels.show();
+    // this one works.
+    pixels.setPixelColor(0, 10, 10, 10);
+    pixels.show();
 
     // Init Accel
     if(!accel.begin()) {
