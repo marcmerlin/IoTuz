@@ -3,7 +3,7 @@ IoTuz
 This is a library for driving the different hardware on the ESP32 based LCA 2017 IoTuz board:
 https://github.com/CCHS-Melbourne/iotuz-esp32-hardware
 
-![IoTuz Render](https://github.com/CCHS-Melbourne/IoTuz/blob/master/Circuit/Resources/IoTuz-Render.png)
+![tassie](https://cloud.githubusercontent.com/assets/1369412/23584813/3b8b49a8-0121-11e7-9833-13882e22dcd4.jpg)
 
 Supported hardware:
 - TFT (hw SPI)
@@ -55,4 +55,10 @@ Required External libraries
 - Adafruit_Sensor
 - Adafruit_ADXL345_U
 - XPT2046_Touchscreen - https://github.com/PaulStoffregen/XPT2046_Touchscreen
+- Note that for some demos, you will most likely want this patch: https://github.com/espressif/Adafruit_ILI9341/pull/1
+
+DemoSauce, if you have the latest libraries and the patch above, will do this:
+See a few screenshots and videos: https://goo.gl/photos/bMVqdiAxDkEppuN88
+![image](https://cloud.githubusercontent.com/assets/1369412/23584753/a0dd0492-011f-11e7-9898-dd428205e552.png)
+![image](https://cloud.githubusercontent.com/assets/1369412/23584755/a81af3a4-011f-11e7-89b6-86de0ad00fcd.png)
 
