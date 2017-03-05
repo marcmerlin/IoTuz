@@ -16,9 +16,11 @@
 
 // https://github.com/zkarcher/demosauce
 
-#include "SPI.h"
-#include "ILI9341_t3.h"
-#include "font_Arial.h"
+//#include "SPI.h"
+//#include "ILI9341_t3.h"
+//#include "font_Arial.h"
+#include <IoTuz.h>
+IoTuz iotuz = IoTuz();
 
 #include "FrameParams.h"
 
@@ -42,10 +44,13 @@
 #include "TransitionSquares.h"
 
 const boolean DO_BENCHMARKS = true;
-const uint32_t SERIAL_BAUD_RATE = 9600;
+const uint32_t SERIAL_BAUD_RATE = 115200;
 
-const boolean DEBUG_ANIM = false; // dev: for hacking on one animation.
-const uint_fast8_t DEBUG_ANIM_INDEX = 0;
+// Some anims crash on my board (not enough power?
+// These anims work: 1, 4, 5 works a bit and then crashes, 6, 7, 8, 9
+// FIXME: set this to false for all the anims to run (if they don't crash on your board)
+const boolean DEBUG_ANIM = true; // dev: for hacking on one animation.
+const uint_fast8_t DEBUG_ANIM_INDEX = 1;
 
 const boolean DEBUG_TRANSITION = false;  // dev: set to true for short animation durations
 const int_fast8_t DEBUG_TRANSITION_INDEX = -1;  // Supports -1: chooses a transition at random
@@ -53,13 +58,14 @@ const int_fast8_t DEBUG_TRANSITION_INDEX = -1;  // Supports -1: chooses a transi
 const int_fast16_t DEFAULT_ANIM_TIME = 20.0f * 1000.0f;  // ms
 
 // TFT pins
-const uint8_t TFT_DC = 9;
-const uint8_t TFT_CS = 10;
-const uint8_t MIC_PIN = 14;
-const uint8_t BACKLIGHT_PIN = 23;
+//const uint8_t TFT_DC = 9;
+//const uint8_t TFT_CS = 10;
+// Assign microphone pin to joystick for now -- merlin
+const uint8_t MIC_PIN = 39;
+const uint8_t BACKLIGHT_PIN = 33;
 
 // Use hardware SPI (#13, #12, #11) and the above for CS/DC
-ILI9341_t3 tft = ILI9341_t3(TFT_CS, TFT_DC);
+//Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC);
 FrameParams frameParams;
 long previousMillis = 0;
 
@@ -103,9 +109,12 @@ int_fast8_t getActiveAnimIndex() {
 }
 
 void setup() {
+  iotuz.begin(); 
+  // backlight is off by default, turn it on.
+  iotuz.screen_bl(true);
   // Backlight
   pinMode( BACKLIGHT_PIN, OUTPUT );
-  analogWrite( BACKLIGHT_PIN, 1023 );
+  digitalWrite( BACKLIGHT_PIN, HIGH );
 
   // Microphone
   pinMode( MIC_PIN, INPUT );
@@ -118,16 +127,19 @@ void setup() {
   if( DO_BENCHMARKS ) {
     Serial.begin( SERIAL_BAUD_RATE );
     tft.setTextColor(ILI9341_YELLOW);
-    tft.setFont(Arial_18);
+    // FIXME: not implemented
+    //tft.setFont(Arial_18);
     tft.setCursor(98, 42);
     tft.print("waiting for");
-    tft.setFont(Arial_24);
+    // FIXME: not implemented
+    //tft.setFont(Arial_24);
     tft.setCursor(100, 80);
     tft.print("Arduino");
     tft.setCursor(60, 120);
     tft.print("Serial Monitor");
     tft.setTextColor(ILI9341_GREEN);
-    tft.setFont(Arial_18);
+    // FIXME: not implemented
+    //tft.setFont(Arial_18);
     while (!Serial && millis() < 8000) { // wait for Arduino Serial Monitor
       tft.fillRect(118, 182, 42, 18, ILI9341_BLACK);
       tft.setCursor(118, 182);
