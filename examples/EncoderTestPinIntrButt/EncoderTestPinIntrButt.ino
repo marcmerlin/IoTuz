@@ -3,8 +3,8 @@
 // Inspired from fbonan
 // https://www.circuitsathome.com/mcu/reading-rotary-encoder-on-arduino/
 
-// This is better than EncoderTestIntr because it only interrupts on
-// pin change instead of some time interval.
+// Another example on how to do this:
+// https://github.com/prampec/arduino-softtimer/blob/master/examples/SoftTimer6Rotary/SoftTimer6Rotary.ino
 
 #include <IoTuz.h>
 IoTuz iotuz = IoTuz();

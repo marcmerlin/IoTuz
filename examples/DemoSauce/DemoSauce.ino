@@ -50,7 +50,7 @@ const uint32_t SERIAL_BAUD_RATE = 115200;
 // These anims work: 1, 4, 5 works a bit and then crashes, 6, 7, 8, 9
 // FIXME: set this to false for all the anims to run (if they don't crash on your board)
 const boolean DEBUG_ANIM = true; // dev: for hacking on one animation.
-const uint_fast8_t DEBUG_ANIM_INDEX = 1;
+const uint_fast8_t DEBUG_ANIM_INDEX = 4;
 
 const boolean DEBUG_TRANSITION = false;  // dev: set to true for short animation durations
 const int_fast8_t DEBUG_TRANSITION_INDEX = -1;  // Supports -1: chooses a transition at random
