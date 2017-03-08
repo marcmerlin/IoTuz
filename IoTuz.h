@@ -4,6 +4,9 @@
 #include <Wire.h>
 #include <SPI.h>
 
+#include <AikoEvents.h>
+using namespace Aiko;
+
 #include <Adafruit_GFX.h>
 // Support for LCD screen
 // The latest version of that library may not be up to date and miss a patch for ESP32

@@ -1,7 +1,7 @@
 #ifndef AikoEvents_h
 #define AikoEvents_h
 
-#include "AikoTiming.h"
+#include "Arduino.h"
 #include "AikoCallback.h"
 
 using namespace std;
@@ -40,7 +40,7 @@ namespace Aiko {
       void addHandler(EventHandler* handler);
       void addHandler(void (*handler)(), unsigned int interval, unsigned int delay = 0);
       void addOneShotHandler(void (*handler)(), unsigned int delay);
-      void loop(unsigned long time = Timing.millis());
+      void loop(unsigned long time = millis());
       void removeHandler(EventHandler* handler);
       void reset();
       

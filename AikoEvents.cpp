@@ -1,5 +1,4 @@
 #include "AikoEvents.h"
-#include "AikoTiming.h"
 
 #include <stdlib.h>
 #include "Arduino.h"
