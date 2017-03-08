@@ -116,8 +116,6 @@ extern Adafruit_NeoPixel pixels;
 extern Adafruit_ADXL345_Unified accel;
 extern XPT2046_Touchscreen ts;
 
-
-
 typedef enum {
     ENC_DOWN = 0,
     ENC_PUSHED = 1,
@@ -136,6 +134,7 @@ class IoTuz {
     // Buffer to store strings going to be printed on tft
     char tft_str[64];
 
+    void enable_aiko_ISR();
     void i2cexp_clear_bits(uint8_t);
     void i2cexp_set_bits(uint8_t);
     uint8_t i2cexp_read();

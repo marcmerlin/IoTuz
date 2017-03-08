@@ -37,6 +37,32 @@ Adafruit_ADXL345_Unified accel = Adafruit_ADXL345_Unified(12345);
 // Touch screen
 XPT2046_Touchscreen ts(TS_CS_PIN);  // Param 2 - NULL - No interrupts)
 
+
+// If enabled by the user, call every millisecond and run the Aiko 
+// event loop.
+void onTimer() {
+    Events.loop();
+}
+
+// Aiko can be run from the sketch's mail loop by simply calling Events.loop();
+// but if you want Aiko events to be run from an ISR while the main loop is busy
+// doing something else, then you call this once, and it'll setup a timer to call
+// your code on interval at a millisecond precision (could be lower if needed)
+// Warning, you CANNOT call Serial or other things that take too long or generate 
+// interrupts since you will already be inside an interrupt.
+void IoTuz::enable_aiko_ISR() {
+    // ESP32 timer
+    hw_timer_t *timer;
+    
+    // 3 timers, choose #3, 80 divider nanosecond precision, 1 to count up
+    timer = timerBegin(3, 80, 1);
+    timerAttachInterrupt(timer, &onTimer, 1);
+    // every 1,000ns = 1ms, autoreload = true
+    timerAlarmWrite(timer, 1000, true);
+    timerAlarmEnable(timer);
+}
+
+
 void read_encoder_ISR() 
 {
     static uint8_t old_AB = 0;

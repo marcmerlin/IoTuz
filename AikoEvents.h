@@ -1,6 +1,8 @@
 #ifndef AikoEvents_h
 #define AikoEvents_h
 
+// Aiko is (c) Andy Gelme and Pete Yandell https://github.com/geekscape/aiko_arduino_legacy
+
 #include "Arduino.h"
 #include "AikoCallback.h"
 
