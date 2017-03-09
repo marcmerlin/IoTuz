@@ -145,7 +145,7 @@ class IoTuz {
     void reset_tft();
     void tftprint(uint16_t, uint16_t, uint8_t, char *);
     TS_Point get_touch();
-    void touchcoord2pixelcoord(uint16_t *, uint16_t *);
+    void touchcoord2pixelcoord(uint16_t *, uint16_t *, uint16_t);
     void begin();
 
   private:

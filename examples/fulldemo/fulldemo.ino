@@ -17,10 +17,11 @@
 #include <IoTuz.h>
 IoTuz iotuz = IoTuz();
 
+#include "tasmanian-devil.c"
+
 bool butA   = false;
 bool butB   = false;
 bool butEnc = false;
-// Are we drawing on the screen with joystick, accelerator, or finger?
 uint16_t joyValueX;
 uint16_t joyValueY;
 bool joyBtnValue;
@@ -141,14 +142,14 @@ void finger_draw() {
     static uint8_t update_coordinates = 0;
     TS_Point p = iotuz.get_touch();
 
-    if (p.z < MINPRESSURE || p.z > MAXPRESSURE) {
+    if (!p.z) {
 	// If we were touching the screen, and we release, show coordinates next time around.
 	if (update_coordinates > 0) update_coordinates = 32;
 	return;
     }
 
     uint16_t pixel_x = p.x, pixel_y = p.y;
-    iotuz.touchcoord2pixelcoord(&pixel_x, &pixel_y);
+    iotuz.touchcoord2pixelcoord(&pixel_x, &pixel_y, p.z);
 
     // Writing coordinates every time is too slow, write less often
     if (update_coordinates == 32) {
@@ -213,10 +214,16 @@ void rotary_encoder() {
 
     int16_t   encoder = iotuz.read_encoder();
     ButtState encoder_button = iotuz.read_encoder_button();
+    int16_t offset;
 
     if (iotuz.encoder_changed() || encoder_button == ENC_PUSHED || encoder_button == ENC_RELEASED) {
-	sprintf(iotuz.tft_str, "%d/%d", encoder_button, encoder);
-	iotuz.tftprint(0, 0, 10, iotuz.tft_str);
+	offset = encoder % 320;
+	if (offset < 0) offset += 320;
+	if (encoder_button == ENC_RELEASED) offset = 0;
+
+	sprintf(iotuz.tft_str, "%d/%d/%d", encoder_button, encoder, offset);
+	iotuz.tftprint(0, 0, 14, iotuz.tft_str);
+	tft.scrollTo(offset);
     }
 }
 
@@ -295,10 +302,7 @@ void led_color_selector() {
     static uint8_t RGB[3] = {255, 255, 255};
 
     TS_Point p = iotuz.get_touch();
-
-    if (p.z < MINPRESSURE || p.z > MAXPRESSURE) {
-	return;
-    }
+    if (!p.z) return;
 
     // Red and Green seem reversed on APA106
     pixels.setPixelColor(0, RGB[1], RGB[0], RGB[2]);
@@ -306,7 +310,7 @@ void led_color_selector() {
     pixels.show();
 
     uint16_t pixel_x = p.x, pixel_y = p.y;
-    iotuz.touchcoord2pixelcoord(&pixel_x, &pixel_y);
+    iotuz.touchcoord2pixelcoord(&pixel_x, &pixel_y, p.z);
 
 //    sprintf(iotuz.tft_str, "%d", pixel_x);
 //    iotuz.tftprint(2, 0, 3, iotuz.tft_str);
@@ -381,6 +385,7 @@ void scan_buttons(bool *need_select) {
 	// that draws a background.
 	//iotuz.tftprint(0, 3, 5, "");
     }
+#if 0
     if (butt_state & I2CEXP_ENC_BUT && !butEnc)
     {
 	butEnc = true;
@@ -391,6 +396,7 @@ void scan_buttons(bool *need_select) {
 	butEnc = false;
 	iotuz.tftprint(0, 4, 7, "");
     }
+#endif
 }
 
 void reset_textcoord() {
@@ -411,7 +417,7 @@ void draw_choices(void) {
 		tft.setCursor(x*boxw + 4, y*boxh + line*8 + 16);
 		if (y*NHORIZ+x == 1 || y*NHORIZ+x == 5 || y*NHORIZ+x == 20 || y*NHORIZ+x == 21) {
 		    tft.setTextColor(ILI9341_RED);
-		} else if (y*NHORIZ+x == 4) {
+		} else if (y*NHORIZ+x == 4 || y*NHORIZ+x == 7) {
 		    tft.setTextColor(ILI9341_BLUE);
 		} else {
 		    tft.setTextColor(ILI9341_WHITE);
@@ -423,6 +429,7 @@ void draw_choices(void) {
 
 }
 
+// FIXME: unused
 void show_selected_box(uint8_t x, uint8_t y) {
     tft.fillRect(x*boxw, y*boxh, boxw, boxh, ILI9341_LIGHTGREY);
 }
@@ -435,10 +442,10 @@ uint8_t get_selection(void) {
     do {
 	p = iotuz.get_touch();
     // at boot, I get a fake touch with pressure 1030
-    } while ( p.z < 1060);
+    } while (!p.z);
 
     uint16_t pixel_x = p.x, pixel_y = p.y;
-    iotuz.touchcoord2pixelcoord(&pixel_x, &pixel_y);
+    iotuz.touchcoord2pixelcoord(&pixel_x, &pixel_y, p.z);
 
     x = pixel_x/(tftw/NHORIZ);
     y = pixel_y/(tfth/NVERT);
@@ -451,7 +458,49 @@ uint8_t get_selection(void) {
     return (x + y*NHORIZ);
 }
 
-void loop(void) {
+void show_logo(uint16_t offset=0) {
+    tft.drawBitmap(0, offset, 320, 240, (uint16_t*)picture3);
+}
+
+// This could be changed in software later, maybe with rotary knob?
+uint8_t RGB_LED_BRIGHTNESS = 1;
+// FIXME: the returned values do not need to be float, but the variables I use
+// are float for smooth transitions, so it carries on to this function for now.
+void LED_Color_Picker(float *red, float *green, float *blue) {
+    uint8_t led_color[3];
+    float led[3];
+
+    // Keep the first LED bright.
+    led_color[0] = random(0, 64);
+    // The lower the previous LED is, the brigher that color was
+    // and the darker we try to make the second one.
+    led_color[1] = constrain(random(0, 255 + 512 - led_color[0]), 0, 255);
+    // Don't make the last LED too bright if the others already are (we
+    // don't want white) or too dark if the others are too dark already.
+    led_color[2] = constrain(
+	random( constrain( (64-(led_color[0] + led_color[1])/2), 0, 255), 
+		255 + 768 - (led_color[0] + led_color[1])), 
+	0,
+	255 );
+
+    // Since color randomization is weighed towards the first color
+    // we randomize color attribution between the 3 colors.
+    uint8_t i = 0;
+    while(i  < 3)
+    {
+	uint8_t color_guess = random(0, 3);
+	// Loop until we get a color slot that's been unused.
+	if (led[color_guess] != -1.0) continue;
+	led[color_guess] = led_color[i++];
+    }
+
+    // Fix things after the fact for RGB LEDs where (bright = 255
+    *red =   (255 - led[0]) / RGB_LED_BRIGHTNESS;
+    *green = (255 - led[1]) / RGB_LED_BRIGHTNESS;
+    *blue =  (255 - led[2]) / RGB_LED_BRIGHTNESS;
+}
+
+void loop() {
     static bool need_select = true;
     static uint8_t select;
     
@@ -507,6 +556,7 @@ void loop(void) {
 	return;
 	break;
     case ROTARTYENC:
+	if (need_select) show_logo();
 	rotary_encoder();
 	break;
     case TETRIS:
@@ -551,10 +601,18 @@ void setup() {
 
     // Tri-color APA106 LEDs Setup
     // Mapping is actually Green, Red, Blue (not RGB)
-    pixels.begin();
-    pixels.setPixelColor(0, 255, 0, 0);
-    pixels.setPixelColor(1, 0, 0, 255);
+    pixels.setPixelColor(0, 32, 0, 0);
+    pixels.setPixelColor(1, 0, 0, 32);
     pixels.show();
+
+    show_logo();
+    tft.setTextColor(ILI9341_BLACK);
+    iotuz.tftprint(1, 1, 0, "Click joystick or rotary encoder");
+    tft.setTextColor(ILI9341_WHITE);
+    for (uint8_t i=0; i<50; i++) {
+	delay(100);
+	if (iotuz.read_encoder_button() == ENC_RELEASED || !digitalRead(JOYSTICK_BUT_PIN)) break;
+    }
 }
 
 // vim:sts=4:sw=4

@@ -48,8 +48,12 @@ void onTimer() {
 // but if you want Aiko events to be run from an ISR while the main loop is busy
 // doing something else, then you call this once, and it'll setup a timer to call
 // your code on interval at a millisecond precision (could be lower if needed)
-// Warning, you CANNOT call Serial or other things that take too long or generate 
-// interrupts since you will already be inside an interrupt.
+// 
+// Warning, you CANNOT call Serial or other things that take too long,
+// take locks, or generate interrupts since you will already be inside
+// an interrupt.
+// No interrupt may spend more than 300ms, or the interrupt will time out with an
+// error like this: Guru Meditation Error: Core 0 panic'ed (Interrupt wdt timeout on CPU1)
 void IoTuz::enable_aiko_ISR() {
     // ESP32 timer
     hw_timer_t *timer;
@@ -176,6 +180,7 @@ void IoTuz::reset_tft() {
     tft.fillScreen(ILI9341_BLACK);
     tft.setTextColor(ILI9341_WHITE);
     tft.setTextSize(1);
+    tft.scrollTo(0);
 }
 
 // maxlength is the maximum number of characters that need to be deleted before writing on top
@@ -194,10 +199,16 @@ TS_Point IoTuz::get_touch() {
     // Then disable it again so that talking SPI to LCD doesn't reach TS
     i2cexp_set_bits(I2CEXP_TOUCH_CS);
 
+    // Tell the caller that the touch is bogus or none happened by setting z to 0.
+    if (p.z < MINPRESSURE || p.z > MAXPRESSURE) p.z = 0;
+    // I've seen bogus touches where both x and y were 0
+    if (p.x == 0 && p.y == 0) p.z = 0;
+
+
     return p;
 }
 
-void IoTuz::touchcoord2pixelcoord(uint16_t *pixel_x, uint16_t *pixel_y) {
+void IoTuz::touchcoord2pixelcoord(uint16_t *pixel_x, uint16_t *pixel_y, uint16_t pixel_z) {
     // Pressure goes from 1000 to 2200 with a stylus but is unreliable,
     // 3000 if you mash a finger in, let's say 2048 range
     // Colors are 16 bits, so multiply pressure by 32 to get a color range from pressure
@@ -207,6 +218,8 @@ void IoTuz::touchcoord2pixelcoord(uint16_t *pixel_x, uint16_t *pixel_y) {
     Serial.print(*pixel_x);
     Serial.print("x");
     Serial.print(*pixel_y);
+    Serial.print(" / pressure:");
+    Serial.print(pixel_z);
     //*pixel_x = constrain((*pixel_x-320)/11.25, 0, 319);
     //*pixel_y = constrain((*pixel_y-200)/15, 0, 239);
     *pixel_x = map(*pixel_x, TS_MINX, TS_MAXX, 0, tftw);
@@ -289,6 +302,8 @@ void IoTuz::begin()
     Serial.print(" x "); Serial.println(tfth);
     Serial.println(F("Done!"));
 
+    // Tri-color APA106 LEDs Setup
+    // Mapping is actually Green, Red, Blue (not RGB)
     // Init LEDs to very dark (show they work, but don't blind)
     pixels.begin();
     // This first pixelcolor is ignored, not sure why

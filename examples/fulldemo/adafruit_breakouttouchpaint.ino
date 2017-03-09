@@ -45,10 +45,8 @@ void touchpaint_loop()
   
   // we have some minimum pressure we consider 'valid'
   // pressure of 0 means no pressing!
-  if (p.z < MINPRESSURE || p.z > MAXPRESSURE) {
-     return;
-  }
-  iotuz.touchcoord2pixelcoord((uint16_t *) &p.x, (uint16_t *) &p.y);
+  if (!p.z) return;
+  iotuz.touchcoord2pixelcoord((uint16_t *) &p.x, (uint16_t *) &p.y, p.z);
     
   if (p.y < BOXSIZE) {
      oldcolor = currentcolor;
