@@ -26,6 +26,15 @@ uint16_t joyValueX;
 uint16_t joyValueY;
 bool joyBtnValue;
 
+#define NUMLED 2
+// How many intermediate shades of colors.
+#define RGB_COLOR_CHANGE_STEPS 100
+// How many steps we hold the target colors.
+#define RGB_COLOR_HOLD_STEPS 40
+
+// OVerride for LED brightness controlled by rotary knob
+uint8_t rgb_led_brightness = 16;
+
 // How many options to display in the rectangle screen
 #define NHORIZ 5
 #define NVERT 5
@@ -34,7 +43,7 @@ bool joyBtnValue;
 // 30 chars high, 5 boxes, 6 lines per box
 char* opt_name[NVERT][NHORIZ][3] = {
     { { "", "Finger", "Paint"},  { "Adafruit", "Touch", "Paint"}, { "Joystick", "Absolute", "Paint"}, { "Joystick", "Relative", "Paint"}, { "", "Accel", "Paint"}, },
-    { { "Select", "LEDs", "Color"}, { "", "LEDs", "Off"}, { "", "Rotary", "Encoder"}, { "", "Round", "Rects"}, { "Round", "Fill", "Rects"}, },
+    { { "Select", "LEDs", "Color"}, { "Rotary", "For Bright", "LED Off"}, { "", "Rotary", "Encoder"}, { "", "Round", "Rects"}, { "Round", "Fill", "Rects"}, },
     { { "", "Text", ""}, { "", "Fill", ""}, { "", "Diagonal", "Lines"}, { "Horizon", "Vert", "Lines"}, { "", "Rectangle", ""}, },
     { { "", "Fill", "Rectangle"}, { "", "Circles", ""}, { "", "Fill", "Circles"}, { "", "Triangles", ""}, { "", "Fill", "Triangles"}, },
     { { "", "Tetris", ""}, { "", "Breakout", ""}, { "", "", ""}, { "", "", ""}, { "", "", ""}, },
@@ -441,6 +450,8 @@ uint8_t get_selection(void) {
     Serial.println("Waiting for finger touch to select option");
     do {
 	p = iotuz.get_touch();
+	// Ensure Aiko events can run.
+	Events.loop();
     // at boot, I get a fake touch with pressure 1030
     } while (!p.z);
 
@@ -462,26 +473,21 @@ void show_logo(uint16_t offset=0) {
     tft.drawBitmap(0, offset, 320, 240, (uint16_t*)picture3);
 }
 
-// This could be changed in software later, maybe with rotary knob?
-uint8_t RGB_LED_BRIGHTNESS = 1;
 // FIXME: the returned values do not need to be float, but the variables I use
 // are float for smooth transitions, so it carries on to this function for now.
-void LED_Color_Picker(float *red, float *green, float *blue) {
+void LED_Color_Picker(uint8_t numled, float *red, float *green, float *blue) {
     uint8_t led_color[3];
-    float led[3];
+    // Initialize LED colors to -1 to keep track of whether each color slot has been assigned 
+    // to by random assignment below
+    float led[3] = { -1, -1, -1};
 
-    // Keep the first LED bright.
-    led_color[0] = random(0, 64);
+    // Keep the first color component bright.
+    led_color[0] = random(200, 256);
     // The lower the previous LED is, the brigher that color was
     // and the darker we try to make the second one.
-    led_color[1] = constrain(random(0, 255 + 512 - led_color[0]), 0, 255);
-    // Don't make the last LED too bright if the others already are (we
-    // don't want white) or too dark if the others are too dark already.
-    led_color[2] = constrain(
-	random( constrain( (64-(led_color[0] + led_color[1])/2), 0, 255), 
-		255 + 768 - (led_color[0] + led_color[1])), 
-	0,
-	255 );
+    led_color[1] = random(0, 255);
+    // The 2nd color is allowed to go to 0. The less bright is is, the brighter we push this one
+    led_color[2] = constrain( random(0, 255 + (255 - led_color[1])*2 ), 0, 255);
 
     // Since color randomization is weighed towards the first color
     // we randomize color attribution between the 3 colors.
@@ -489,15 +495,122 @@ void LED_Color_Picker(float *red, float *green, float *blue) {
     while(i  < 3)
     {
 	uint8_t color_guess = random(0, 3);
-	// Loop until we get a color slot that's been unused.
+
+	// Loop until we get a color slot that's not be assigned to
 	if (led[color_guess] != -1.0) continue;
-	led[color_guess] = led_color[i++];
+    	led[color_guess] = led_color[i++];
     }
 
-    // Fix things after the fact for RGB LEDs where (bright = 255
-    *red =   (255 - led[0]) / RGB_LED_BRIGHTNESS;
-    *green = (255 - led[1]) / RGB_LED_BRIGHTNESS;
-    *blue =  (255 - led[2]) / RGB_LED_BRIGHTNESS;
+    *red =   led[0];
+    *green = led[1];
+    *blue =  led[2];
+#ifdef DEBUG_LED
+    Serial.print("LED ");
+    Serial.print(numled);
+    Serial.print(": picked RGB Color: ");
+    Serial.print((int)*red, HEX);
+    Serial.print("/");
+    Serial.print((int)*green, HEX);
+    Serial.print("/");
+    Serial.println((int)*blue, HEX);
+#endif
+}
+
+bool rgbLedFade(uint8_t red[], uint8_t green[], uint8_t blue[]) {
+    static uint8_t RGB_led_stage = 0;
+    static float RGBa[NUMLED][3] = { 255, 255, 255 };
+    static float RGBb[NUMLED][3];
+    static float RGBdiff[NUMLED][3];
+
+    if (RGB_led_stage < RGB_COLOR_CHANGE_STEPS)
+    {
+	for (uint8_t numled=0; numled < NUMLED; numled++) {
+	    if (RGB_led_stage == 0) {
+		LED_Color_Picker(numled, &RGBb[numled][0], &RGBb[numled][1], &RGBb[numled][2]);
+	    }
+		for (uint8_t i = 0; i <= 2; i++)
+		{
+		    if (RGB_led_stage == 0)
+		    {
+			RGBdiff[numled][i] = (RGBb[numled][i] - RGBa[numled][i]) / RGB_COLOR_CHANGE_STEPS;
+		    }
+		    RGBa[numled][i] = constrain(RGBa[numled][i] + RGBdiff[numled][i], 0, 255);
+		}
+		if (rgb_led_brightness) {
+		    red[numled]   = int(RGBa[numled][0]) / (17-rgb_led_brightness);
+		    green[numled] = int(RGBa[numled][1]) / (17-rgb_led_brightness);
+		    blue[numled]  = int(RGBa[numled][2]) / (17-rgb_led_brightness);
+		} else {
+		    red[numled]   = 0;
+		    green[numled] = 0;
+		    blue[numled]  = 0;
+		}
+	}
+	RGB_led_stage++;
+	return 1;
+    }
+    if (RGB_led_stage == RGB_COLOR_CHANGE_STEPS) 
+    {
+	// Cannot use Serial in an ISR or things will crash
+#ifdef DEBUG_LED
+	Serial.print(millis());
+	Serial.println(": Holding Color for LEDs");
+#endif
+    }
+    if (RGB_led_stage < RGB_COLOR_CHANGE_STEPS + RGB_COLOR_HOLD_STEPS)
+    {
+	RGB_led_stage++;
+	return 0;
+    }
+    else
+    {
+#ifdef DEBUG_LED
+	Serial.print(millis());
+	Serial.println(": Done Holding Color for LEDs");
+#endif
+	RGB_led_stage = 0;
+	return 0;
+    }
+}
+
+
+void LED_Handler() {
+    uint8_t numled;
+    // This needs to be static because some calls to rgbLedFade do not return a modified value
+    // (holding a color at end of stage)
+    static uint8_t red[NUMLED], green[NUMLED], blue[NUMLED];
+
+    rgbLedFade(red, green, blue);
+    for (uint8_t numled=0; numled<NUMLED; numled++) {
+	// APA106 Mapping is actually Green, Red, Blue (not RGB)
+	pixels.setPixelColor(numled, green[numled], red[numled], blue[numled]);
+#ifdef DEBUG_LED
+	Serial.print("Set LED ");
+	Serial.print(numled);
+	Serial.print(": ");
+	Serial.print((int)red[numled], HEX);
+	Serial.print("/");
+	Serial.print((int)green[numled], HEX);
+	Serial.print("/");
+	Serial.println((int)blue[numled], HEX);
+#endif
+    }
+    pixels.show();
+}
+
+void LED_Brightness_Handler() {
+    // Start at -1 to force a screen update at init.
+    static int16_t   last_encoder = -4;
+    int16_t   encoder = iotuz.read_encoder();
+    // Encoder jumps 4 notches for each detent click
+    int16_t offset = (encoder - last_encoder)/4;
+    last_encoder = encoder;
+
+    if (offset) {
+	rgb_led_brightness = constrain(rgb_led_brightness + offset, 0, 16);
+	sprintf(iotuz.tft_str, "LED Bright:%d", rgb_led_brightness);
+	iotuz.tftprint(40, 0, 13, iotuz.tft_str);
+    }
 }
 
 void loop() {
@@ -511,11 +624,6 @@ void loop() {
 	Serial.print("Got menu selection #");
 	Serial.println(select);
 	tft.fillScreen(ILI9341_BLACK);
-
-	// Kind of random LED illumination
-	pixels.setPixelColor(0, (select % 5)*50, 0, 255);
-	pixels.setPixelColor(1, 0, (select/5)*64, 255);
-	pixels.show();
     }
 
 
@@ -551,6 +659,7 @@ void loop() {
 	pixels.setPixelColor(0, 0, 0, 0);
 	pixels.setPixelColor(1, 0, 0, 0);
 	pixels.show();
+	rgb_led_brightness = 0;
 	// shortcut scan buttons below and go back to main menu
 	need_select = true;
 	return;
@@ -582,6 +691,9 @@ void loop() {
     }
     // resets need_select to false unless 'B' is pushed.
     scan_buttons(&need_select);
+
+    // Run the Aiko event loop since it's not safe to run from an ISR
+    Events.loop();
     delay(1);
 }
 
@@ -613,6 +725,12 @@ void setup() {
 	delay(100);
 	if (iotuz.read_encoder_button() == ENC_RELEASED || !digitalRead(JOYSTICK_BUT_PIN)) break;
     }
+
+    Events.addHandler(LED_Handler, 50);
+    Events.addHandler(LED_Brightness_Handler, 333);
+    // Make use of my ISR driven mini port of Andy Gelme's Aiko
+    // Sadly, I cannot. Calling pixels.show() from an ISR causes crashes.
+    //iotuz.enable_aiko_ISR();
 }
 
 // vim:sts=4:sw=4
