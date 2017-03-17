@@ -24,7 +24,12 @@ Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC, TFT_RST);
 //ILI9341_t3 tft = ILI9341_t3(TFT_CS, TFT_DC, TFT_RST);
 
 // If you are lacking the ESP32 patch, you will get no error, but the LEDs will not work
+#ifdef NEOPIXEL
 Adafruit_NeoPixel pixels = Adafruit_NeoPixel(NUMPIXELS, RGB_LED_PIN, NEO_GRB + NEO_KHZ800);
+#else
+rgbVal pixels[NUMPIXELS];
+#endif
+
 
 // ADXL345
 Adafruit_ADXL345_Unified accel = Adafruit_ADXL345_Unified(12345);
@@ -302,6 +307,7 @@ void IoTuz::begin()
     Serial.print(" x "); Serial.println(tfth);
     Serial.println(F("Done!"));
 
+#ifdef NEOPIXEL
     // Tri-color APA106 LEDs Setup
     // Mapping is actually Green, Red, Blue (not RGB)
     // Init LEDs to very dark (show they work, but don't blind)
@@ -311,12 +317,20 @@ void IoTuz::begin()
     pixels.setPixelColor(1, 5, 5, 5);
     pixels.show();
     // this one works.
-    pixels.setPixelColor(0, 10, 10, 10);
-    pixels.show();
+    //pixels.setPixelColor(0, 10, 10, 10);
+    //pixels.show();
+#else
+    ws2812_init(RGB_LED_PIN, LED_WS2812B);
+    pixels[0] = makeRGBVal(20, 20, 20);
+    pixels[1] = makeRGBVal(0, 20, 0);
+    ws2812_setColors(NUMPIXELS, pixels);
+#endif
 
-    // Init Accel
+    Serial.println(F("LEDs turned on, setting up Accelerometer next"));
+
+    // init accel
     if(!accel.begin()) {
-	/* There was a problem detecting the ADXL345 ... check your connections */
+	/* there was a problem detecting the adxl345 ... check your connections */
 	Serial.println("Ooops, no ADXL345 detected ... Check your wiring!");
 	while(1);
     }
@@ -333,6 +347,8 @@ void IoTuz::begin()
     Serial.println("------------------------------------");
     Serial.println("");
 
+
+    Serial.println("Enable rotary encoder ISR:");
     // Initialize rotary encoder reading and decoding
     attachInterrupt(ENCODERA_PIN, read_encoder_ISR, CHANGE);
     attachInterrupt(ENCODERB_PIN, read_encoder_ISR, CHANGE);

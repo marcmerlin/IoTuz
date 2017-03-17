@@ -1,19 +1,7 @@
 /***************************************************
-  This is our GFX example for the Adafruit ILI9341 Breakout and Shield
-  ----> http://www.adafruit.com/products/1651
-
-  Check out the links above for our tutorials and wiring diagrams
-  These displays use SPI to communicate, 4 or 5 pins are required to
-  interface (RST is optional)
-  Adafruit invests time and resources providing this open source code,
-  please support Adafruit and open-source hardware by purchasing
-  products from Adafruit!
-
-  Written by Limor Fried/Ladyada for Adafruit Industries.
-  MIT license, all text above must be included in any redistribution
+  Written by Marc MERLIN, License Apache-2
  ****************************************************/
 
-#include <Wire.h>
 #include <IoTuz.h>
 IoTuz iotuz = IoTuz();
 
@@ -24,7 +12,8 @@ bool butB   = false;
 bool butEnc = false;
 uint16_t joyValueX;
 uint16_t joyValueY;
-bool joyBtnValue;
+// When driving the LEDs directly, turn off the background handler that controls the LEDs
+bool DISABLE_RGB_HANDLER = 0;
 
 #define NUMLED 2
 // How many intermediate shades of colors.
@@ -79,7 +68,6 @@ typedef enum {
     TETRIS = 20,
     BREAKOUT = 21,
 } LCDtest;
-
 
 void lcd_test(LCDtest choice) {
     switch (choice) {
@@ -185,7 +173,7 @@ void read_joystick(bool showdebug=true) {
     // read the analog in value:
     joyValueX = 4096-analogRead(JOYSTICK_X_PIN);
     joyValueY = analogRead(JOYSTICK_Y_PIN);
-    joyBtnValue = !digitalRead(JOYSTICK_BUT_PIN);
+    bool joyBtnValue = !digitalRead(JOYSTICK_BUT_PIN);
 
     if (showdebug) {
 	// print the results to the serial monitor:
@@ -314,9 +302,15 @@ void led_color_selector() {
     if (!p.z) return;
 
     // Red and Green seem reversed on APA106
+#ifdef NEOPIXEL
     pixels.setPixelColor(0, RGB[1], RGB[0], RGB[2]);
     pixels.setPixelColor(1, 255-RGB[1], 255-RGB[0], 255-RGB[2]);
     pixels.show();
+#else
+    pixels[0] = makeRGBVal(RGB[1], RGB[0], RGB[2]);
+    pixels[1] = makeRGBVal(255-RGB[1], 255-RGB[0], 255-RGB[2]);
+    ws2812_setColors(NUMPIXELS, pixels);
+#endif
 
     uint16_t pixel_x = p.x, pixel_y = p.y;
     iotuz.touchcoord2pixelcoord(&pixel_x, &pixel_y, p.z);
@@ -583,7 +577,13 @@ void LED_Handler() {
     rgbLedFade(red, green, blue);
     for (uint8_t numled=0; numled<NUMLED; numled++) {
 	// APA106 Mapping is actually Green, Red, Blue (not RGB)
-	pixels.setPixelColor(numled, green[numled], red[numled], blue[numled]);
+	if (! DISABLE_RGB_HANDLER) {
+#ifdef NEOPIXEL
+	    pixels.setPixelColor(numled, green[numled], red[numled], blue[numled]);
+#else
+	    pixels[numled] = makeRGBVal(green[numled], red[numled], blue[numled]);
+#endif
+	}
 #ifdef DEBUG_LED
 	Serial.print("Set LED ");
 	Serial.print(numled);
@@ -595,7 +595,11 @@ void LED_Handler() {
 	Serial.println((int)blue[numled], HEX);
 #endif
     }
+#ifdef NEOPIXEL
     pixels.show();
+#else
+    ws2812_setColors(NUMPIXELS, pixels);
+#endif
 }
 
 void LED_Brightness_Handler() {
@@ -619,6 +623,7 @@ void loop() {
     
     if (need_select) {
 	iotuz.reset_tft();
+	DISABLE_RGB_HANDLER = 0;
 	draw_choices();
 	select = get_selection();
 	Serial.print("Got menu selection #");
@@ -637,7 +642,6 @@ void loop() {
 	break;
     case TOUCHPAINT:
 	// First time around the loop, draw a color selection circle
-	// FIXME, touch screen is not currently working
 	if (need_select) touchpaint_setup();
 	touchpaint_loop();
 	break;
@@ -652,13 +656,23 @@ void loop() {
 	break;
     case COLORLED:
 	// First time around the loop, draw a color selection circle
-	if (need_select) draw_color_selector();
+	// and turn off RGB handler
+	if (need_select) { 
+	    draw_color_selector();
+	    DISABLE_RGB_HANDLER = 1;
+	}
 	led_color_selector();
 	break;
     case LEDOFF:
+#ifdef NEOPIXEL
 	pixels.setPixelColor(0, 0, 0, 0);
 	pixels.setPixelColor(1, 0, 0, 0);
 	pixels.show();
+#else
+	pixels[0] = makeRGBVal(0, 0, 0);
+	pixels[1] = makeRGBVal(0, 0, 0);
+	ws2812_setColors(NUMPIXELS, pixels);
+#endif
 	rgb_led_brightness = 0;
 	// shortcut scan buttons below and go back to main menu
 	need_select = true;
@@ -707,30 +721,44 @@ void setup() {
     boxh = tfth/NVERT;
     Serial.print("Selection Box Size: "); Serial.print(boxw); 
     Serial.print(" x "); Serial.println(boxh);
+    Serial.println("Turn backlight on");
     // backlight is off by default, turn it on.
     iotuz.screen_bl(true);
 
 
     // Tri-color APA106 LEDs Setup
     // Mapping is actually Green, Red, Blue (not RGB)
+#ifdef NEOPIXEL
     pixels.setPixelColor(0, 32, 0, 0);
     pixels.setPixelColor(1, 0, 0, 32);
     pixels.show();
+#else
+    pixels[0] = makeRGBVal(32, 32, 0);
+    pixels[1] = makeRGBVal(0, 0, 32);
+    ws2812_setColors(NUMPIXELS, pixels);
+#endif
 
     show_logo();
+    Serial.println("Logo displayed, waiting for timeout or click");
     tft.setTextColor(ILI9341_BLACK);
     iotuz.tftprint(1, 1, 0, "Click joystick or rotary encoder");
     tft.setTextColor(ILI9341_WHITE);
     for (uint8_t i=0; i<50; i++) {
 	delay(100);
-	if (iotuz.read_encoder_button() == ENC_RELEASED || !digitalRead(JOYSTICK_BUT_PIN)) break;
+	if (iotuz.read_encoder_button() == ENC_RELEASED || !digitalRead(JOYSTICK_BUT_PIN)) {
+	    Serial.println("Button clicked");
+	    break;
+	}
     }
+    Serial.println("Setting up Aiko event handlers");
 
-    Events.addHandler(LED_Handler, 50);
+    Events.addHandler(LED_Handler, 10);
     Events.addHandler(LED_Brightness_Handler, 333);
     // Make use of my ISR driven mini port of Andy Gelme's Aiko
     // Sadly, I cannot. Calling pixels.show() from an ISR causes crashes.
     //iotuz.enable_aiko_ISR();
+
+    Serial.println("Aiko Event handlers installed");
 }
 
 // vim:sts=4:sw=4

@@ -1,3 +1,5 @@
+#define NEOPIXEL
+
 #ifndef IOTUZ_H
 #define IOTUZ_H
 
@@ -24,7 +26,14 @@ using namespace Aiko;
 // I have patched the Adafruit library to support ESP32. If that hasn't been merged yet, see this patch
 // https://github.com/adafruit/Adafruit_NeoPixel/pull/125
 // If you do NOT apply my patch, the LEDS WILL NOT WORK
+// Ok, even with my patch, bit banging does not work well with ESP32
+#ifdef NEOPIXEL
 #include "Adafruit_NeoPixel.h"
+#endif
+
+// Instead use this library that was designed to use the ESP32 IO hardware
+// https://github.com/MartyMacGyver/ESP32-Digital-RGB-LED-Drivers.git
+#include "ws2812.h"
 
 // Accelerometer
 #include <Adafruit_Sensor.h>
@@ -112,7 +121,11 @@ BME230: 0x77 (Temp/Humidity/Pressure)
 #define TS_CS_PIN  33
 
 extern Adafruit_ILI9341 tft;
-extern Adafruit_NeoPixel pixels; 
+#ifdef NEOPIXEL
+extern Adafruit_NeoPixel pixels;
+#else
+extern rgbVal pixels[NUMPIXELS];
+#endif
 extern Adafruit_ADXL345_Unified accel;
 extern XPT2046_Touchscreen ts;
 
