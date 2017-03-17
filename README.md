@@ -25,13 +25,12 @@ Unused/Unsupported:
 - audio (requires a non trivial driver and wouldn't be useful without sdcard support)
 - IR LED / IR receiver (haven't yet used them)
 
-TFT Driver is slow in hardare SPI due to lock and imperfect support, see
+TFT Driver with standard Adafruit driver is slow in hardare SPI due to lock and imperfect support, see
 https://github.com/adafruit/Adafruit_ILI9341/issues/19#issuecomment-262851759
 on how to #define CONFIG_DISABLE_HAL_LOCKS 1
-
 See also https://github.com/espressif/arduino-esp32/issues/149
 
-That said there is a new driver optimized for ESP32:
+As a result, my code now relies on a new driver from @me-no-dev optimized for ESP32:
 - https://github.com/espressif/Adafruit_ILI9341
 - https://github.com/espressif/Adafruit-GFX-Library
 
@@ -49,16 +48,21 @@ easier when you get a crash dump on your serial port:
 
 Required External libraries
 ---------------------------
-- Adafruit_GFX (from adafruit or https://github.com/espressif/Adafruit-GFX-Library)
-- Adafruit_ILI9341 (from adafruit or https://github.com/espressif/Adafruit_ILI9341)
+- Adafruit_GFX (https://github.com/espressif/Adafruit-GFX-Library)
+- Adafruit_ILI9341 (https://github.com/espressif/Adafruit_ILI9341)
 - Adafruit_NeoPixel
 - Adafruit_Sensor
 - Adafruit_ADXL345_U
 - XPT2046_Touchscreen - https://github.com/PaulStoffregen/XPT2046_Touchscreen
 - Note that for some demos, you will most likely want this patch: https://github.com/espressif/Adafruit_ILI9341/pull/1
 
-DemoSauce, if you have the latest libraries and the patch above, will do this:
+DemoSauce, if you have the latest libraries and the patch to espressif/Adafruit_ILI9341/pull/1, you will be able to do this:
 See a few screenshots and videos: https://goo.gl/photos/bMVqdiAxDkEppuN88
 ![image](https://cloud.githubusercontent.com/assets/1369412/23584753/a0dd0492-011f-11e7-9898-dd428205e552.png)
 ![image](https://cloud.githubusercontent.com/assets/1369412/23584755/a81af3a4-011f-11e7-89b6-86de0ad00fcd.png)
 
+
+Credits
+-------
+In addition to the original team who built IoTuz, I owe big thanks to:
+- me-no-dev for all the help he provided while I was working with his code and integrating drivers
