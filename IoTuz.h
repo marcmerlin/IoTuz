@@ -1,4 +1,4 @@
-#define NEOPIXEL
+//#define NEOPIXEL
 
 #ifndef IOTUZ_H
 #define IOTUZ_H

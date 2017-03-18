@@ -14,6 +14,9 @@ uint16_t joyValueX;
 uint16_t joyValueY;
 // When driving the LEDs directly, turn off the background handler that controls the LEDs
 bool DISABLE_RGB_HANDLER = 0;
+// Same with rotary encoder
+bool DISABLE_ROTARY_HANDLER = 1;
+
 
 #define NUMLED 2
 // How many intermediate shades of colors.
@@ -265,7 +268,11 @@ void accel_draw() {
     tft.fillCircle(int(pixel_x), int(pixel_y), 2, tenbitstocolor(update_cnt % 1024));
     // don't go all the way to the border, or the drawing will wrap to the other side of the screen.
     pixel_x = constrain(pixel_x + accel_x, 2, 318);
+// horrible (hopefully temporary) hack to not trigger a bug in RMT/WS2812 neopixel lib
+// Disabling tis line of code shifts things around in way that avoids the bug for now.
+#ifdef NEOPIXEL
     pixel_y = constrain(pixel_y + accel_y, 2, 238);
+#endif
 
     // Do not write the cursor values too often, it's too slow
     if (!(update_cnt++ % 32)) {
@@ -603,17 +610,19 @@ void LED_Handler() {
 }
 
 void LED_Brightness_Handler() {
-    // Start at -1 to force a screen update at init.
-    static int16_t   last_encoder = -4;
-    int16_t   encoder = iotuz.read_encoder();
-    // Encoder jumps 4 notches for each detent click
-    int16_t offset = (encoder - last_encoder)/4;
-    last_encoder = encoder;
+    if (! DISABLE_ROTARY_HANDLER) {
+	// Start at -1 to force a screen update at init.
+	static int16_t   last_encoder = -4;
+	int16_t   encoder = iotuz.read_encoder();
+	// Encoder jumps 4 notches for each detent click
+	int16_t offset = (encoder - last_encoder)/4;
+	last_encoder = encoder;
 
-    if (offset) {
-	rgb_led_brightness = constrain(rgb_led_brightness + offset, 0, 16);
-	sprintf(iotuz.tft_str, "LED Bright:%d", rgb_led_brightness);
-	iotuz.tftprint(40, 0, 13, iotuz.tft_str);
+	if (offset) {
+	    rgb_led_brightness = constrain(rgb_led_brightness + offset, 0, 16);
+	    sprintf(iotuz.tft_str, "LED Bright:%d", rgb_led_brightness);
+	    iotuz.tftprint(40, 0, 13, iotuz.tft_str);
+	}
     }
 }
 
@@ -624,6 +633,7 @@ void loop() {
     if (need_select) {
 	iotuz.reset_tft();
 	DISABLE_RGB_HANDLER = 0;
+	DISABLE_ROTARY_HANDLER = 0;
 	draw_choices();
 	select = get_selection();
 	Serial.print("Got menu selection #");
@@ -679,7 +689,10 @@ void loop() {
 	return;
 	break;
     case ROTARTYENC:
-	if (need_select) show_logo();
+	if (need_select) {
+	    show_logo();
+	    DISABLE_ROTARY_HANDLER = 1;
+	}
 	rotary_encoder();
 	break;
     case TETRIS:
