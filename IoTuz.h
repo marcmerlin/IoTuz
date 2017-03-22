@@ -1,3 +1,6 @@
+// MartyMacGyver/ESP32-Digital-RGB-LED-Drivers is not stable for me, so if you 
+// have crashes or problems, define this and RGB handling will switch to the adafruit
+// Neopixel library. That library is not very good (LEDs can flicker) but it's stable.
 //#define NEOPIXEL
 
 #ifndef IOTUZ_H
@@ -42,7 +45,14 @@ using namespace Aiko;
 // Touch screen https://github.com/PaulStoffregen/XPT2046_Touchscreen
 #include <XPT2046_Touchscreen.h>
 
+// https://github.com/marcmerlin/Arduino-IRremote
+#include <IRremote.h>
+#include "IRcodes.h"
+
 // https://github.com/CCHS-Melbourne/iotuz-esp32-hardware/wiki has hardware mapping details
+// On ESP32, those IO pins do not exist: 6 7 8 10 11 20 24 28 29 30 31
+// These I/O pins are unused on the board design, but they are input only: 37 and 38
+
 /*
 I2C addresses:
 Audio:  0x1A
@@ -54,7 +64,13 @@ ADXL:   0x53
 BME230: 0x77 (Temp/Humidity/Pressure)
 */
 
+#define IR_RX_PIN 35
+#define IR_TX_PIN 26
 
+// Joystick Setup
+#define JOYSTICK_X_PIN 39
+#define JOYSTICK_Y_PIN 34
+#define JOYSTICK_BUT_PIN 0
 
 // TFT + Touch Screen Setup Start
 // These are the minimal changes from v0.1 to get the LCD working
@@ -66,6 +82,12 @@ BME230: 0x77 (Temp/Humidity/Pressure)
 #define SPI_MOSI 13
 #define SPI_CLK 14
 
+// Rotary Encocer
+#define ENCODERA_PIN 15
+#define ENCODERB_PIN 36
+
+#define BAT_PIN 2
+
 // APA106 LEDs
 #define RGB_LED_PIN 23
 #define NUMPIXELS 2
@@ -74,6 +96,7 @@ BME230: 0x77 (Temp/Humidity/Pressure)
 // expander, as well as both push buttons
 #define I2C_EXPANDER 0x20	//0100000 (7bit) address of the IO expander on i2c bus
 
+// Some I/O pins are behind the I/O expander
 /* Port expander PCF8574, access via I2C on */
 #define I2CEXP_ACCEL_INT    0x01	// (In)
 #define I2CEXP_A_BUT	    0x02	// (In)
@@ -102,18 +125,6 @@ BME230: 0x77 (Temp/Humidity/Pressure)
 #define MINPRESSURE 400
 #define MAXPRESSURE 3000
 
-// Joystick Setup
-#define JOYSTICK_X_PIN 39
-#define JOYSTICK_Y_PIN 34
-#define JOYSTICK_BUT_PIN 0
-
-// Center on my IoTuz board (not used anymore)
-#define JOYSTICK_CENTERX  1785
-#define JOYSTICK_CENTERY  1854
-
-#define ENCODERA_PIN 15
-#define ENCODERB_PIN 36
-
 // Touch screen select is on port expander line 6, not directly connected, so the library
 // cannot toggle it directly. It however requires a CS pin, so I'm giving it 33, a spare IO
 // pin so that it doesn't break anything else.
@@ -128,6 +139,8 @@ extern rgbVal pixels[NUMPIXELS];
 #endif
 extern Adafruit_ADXL345_Unified accel;
 extern XPT2046_Touchscreen ts;
+extern IRrecv irrecv;
+extern decode_results IR_result;
 
 typedef enum {
     ENC_DOWN = 0,
@@ -154,6 +167,7 @@ class IoTuz {
     int16_t read_encoder();
     bool encoder_changed();
     ButtState read_encoder_button();
+    float battery_level();
     void screen_bl(bool);
     void reset_tft();
     void tftprint(uint16_t, uint16_t, uint8_t, char *);

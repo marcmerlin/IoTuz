@@ -19,13 +19,14 @@ bool DISABLE_ROTARY_HANDLER = 1;
 
 
 #define NUMLED 2
-// How many intermediate shades of colors.
-#define RGB_COLOR_CHANGE_STEPS 100
-// How many steps we hold the target colors.
-#define RGB_COLOR_HOLD_STEPS 40
+// 5 is fast-ish, 1 is super duper fast, 50 is very very slow color transitions
+// LED_SPEED can be changed with the remote or the rotary button if pushed
+uint8_t LED_SPEED = 5;
+//#define DEBUG_LED
 
 // OVerride for LED brightness controlled by rotary knob
-uint8_t rgb_led_brightness = 16;
+uint8_t RGB_LED_BRIGHTNESS = 16;
+uint8_t LCD_BRIGHTNESS = 14;
 
 // How many options to display in the rectangle screen
 #define NHORIZ 5
@@ -483,12 +484,12 @@ void LED_Color_Picker(uint8_t numled, float *red, float *green, float *blue) {
     float led[3] = { -1, -1, -1};
 
     // Keep the first color component bright.
-    led_color[0] = random(200, 256);
+    led_color[0] = random(128, 256);
     // The lower the previous LED is, the brigher that color was
     // and the darker we try to make the second one.
     led_color[1] = random(0, 255);
     // The 2nd color is allowed to go to 0. The less bright is is, the brighter we push this one
-    led_color[2] = constrain( random(0, 255 + (255 - led_color[1])*2 ), 0, 255);
+    led_color[2] = random(0, (255 - led_color[1])/2);
 
     // Since color randomization is weighed towards the first color
     // we randomize color attribution between the 3 colors.
@@ -522,8 +523,12 @@ bool rgbLedFade(uint8_t red[], uint8_t green[], uint8_t blue[]) {
     static float RGBa[NUMLED][3] = { 255, 255, 255 };
     static float RGBb[NUMLED][3];
     static float RGBdiff[NUMLED][3];
+    // How many intermediate shades of colors.
+    uint16_t rgb_color_change_steps = 20 * LED_SPEED;
+    // How many steps we hold the target colors.
+    uint8_t rgb_color_hold_steps  = 10 * LED_SPEED;
 
-    if (RGB_led_stage < RGB_COLOR_CHANGE_STEPS)
+    if (RGB_led_stage < rgb_color_change_steps)
     {
 	for (uint8_t numled=0; numled < NUMLED; numled++) {
 	    if (RGB_led_stage == 0) {
@@ -533,14 +538,14 @@ bool rgbLedFade(uint8_t red[], uint8_t green[], uint8_t blue[]) {
 		{
 		    if (RGB_led_stage == 0)
 		    {
-			RGBdiff[numled][i] = (RGBb[numled][i] - RGBa[numled][i]) / RGB_COLOR_CHANGE_STEPS;
+			RGBdiff[numled][i] = (RGBb[numled][i] - RGBa[numled][i]) / rgb_color_change_steps;
 		    }
 		    RGBa[numled][i] = constrain(RGBa[numled][i] + RGBdiff[numled][i], 0, 255);
 		}
-		if (rgb_led_brightness) {
-		    red[numled]   = int(RGBa[numled][0]) / (17-rgb_led_brightness);
-		    green[numled] = int(RGBa[numled][1]) / (17-rgb_led_brightness);
-		    blue[numled]  = int(RGBa[numled][2]) / (17-rgb_led_brightness);
+		if (RGB_LED_BRIGHTNESS) {
+		    red[numled]   = int(RGBa[numled][0]) / (17-RGB_LED_BRIGHTNESS);
+		    green[numled] = int(RGBa[numled][1]) / (17-RGB_LED_BRIGHTNESS);
+		    blue[numled]  = int(RGBa[numled][2]) / (17-RGB_LED_BRIGHTNESS);
 		} else {
 		    red[numled]   = 0;
 		    green[numled] = 0;
@@ -550,7 +555,7 @@ bool rgbLedFade(uint8_t red[], uint8_t green[], uint8_t blue[]) {
 	RGB_led_stage++;
 	return 1;
     }
-    if (RGB_led_stage == RGB_COLOR_CHANGE_STEPS) 
+    if (RGB_led_stage == rgb_color_change_steps) 
     {
 	// Cannot use Serial in an ISR or things will crash
 #ifdef DEBUG_LED
@@ -558,7 +563,7 @@ bool rgbLedFade(uint8_t red[], uint8_t green[], uint8_t blue[]) {
 	Serial.println(": Holding Color for LEDs");
 #endif
     }
-    if (RGB_led_stage < RGB_COLOR_CHANGE_STEPS + RGB_COLOR_HOLD_STEPS)
+    if (RGB_led_stage < rgb_color_change_steps + rgb_color_hold_steps)
     {
 	RGB_led_stage++;
 	return 0;
@@ -591,7 +596,7 @@ void LED_Handler() {
 	    pixels[numled] = makeRGBVal(green[numled], red[numled], blue[numled]);
 #endif
 	}
-#ifdef DEBUG_LED
+#if 0
 	Serial.print("Set LED ");
 	Serial.print(numled);
 	Serial.print(": ");
@@ -602,28 +607,140 @@ void LED_Handler() {
 	Serial.println((int)blue[numled], HEX);
 #endif
     }
+    if (! DISABLE_RGB_HANDLER) {
 #ifdef NEOPIXEL
-    pixels.show();
+	pixels.show();
 #else
-    ws2812_setColors(NUMPIXELS, pixels);
+	ws2812_setColors(NUMPIXELS, pixels);
 #endif
+    }
 }
 
-void LED_Brightness_Handler() {
-    if (! DISABLE_ROTARY_HANDLER) {
-	// Start at -1 to force a screen update at init.
-	static int16_t   last_encoder = -4;
-	int16_t   encoder = iotuz.read_encoder();
-	// Encoder jumps 4 notches for each detent click
-	int16_t offset = (encoder - last_encoder)/4;
-	last_encoder = encoder;
+void Rotary_Handler() {
+    static int16_t   last_brightness_encoder = 0;
+    static int16_t   last_speed_encoder = 0;
+    int16_t speed_encoder;
+    int16_t brightness_encoder;
+    int16_t offset;
 
-	if (offset) {
-	    rgb_led_brightness = constrain(rgb_led_brightness + offset, 0, 16);
-	    sprintf(iotuz.tft_str, "LED Bright:%d", rgb_led_brightness);
-	    iotuz.tftprint(40, 0, 13, iotuz.tft_str);
-	}
+    if (! DISABLE_ROTARY_HANDLER) {
+	switch (iotuz.read_encoder_button()) {
+	case ENC_PUSHED:
+	    last_speed_encoder = iotuz.read_encoder();
+	    break;
+
+	case ENC_DOWN:
+	    speed_encoder = iotuz.read_encoder();
+	    offset = (speed_encoder - last_speed_encoder)/4;
+	    last_speed_encoder = speed_encoder;
+
+	    if (offset) {
+		LED_SPEED = constrain(LED_SPEED + offset, 1, 50);
+		sprintf(iotuz.tft_str, "LED Spd:%d", LED_SPEED);
+		iotuz.tftprint(29, 0, 10, iotuz.tft_str);
+	    }
+	    break;
+
+	default:
+	    brightness_encoder = iotuz.read_encoder();
+	    // Encoder jumps 4 notches for each detent click
+	    offset = (brightness_encoder - last_brightness_encoder)/4;
+	    last_brightness_encoder = brightness_encoder;
+
+	    if (offset) {
+		RGB_LED_BRIGHTNESS = constrain(RGB_LED_BRIGHTNESS + offset, 0, 16);
+		sprintf(iotuz.tft_str, "LED Bright:%d", RGB_LED_BRIGHTNESS);
+		iotuz.tftprint(40, 0, 13, iotuz.tft_str);
+		// 0 -> 0, 1-4 -> 1, 4-8 -> 2, etc...
+		LCD_BRIGHTNESS = RGB_LED_BRIGHTNESS+3/4;
+	    }
+
+	} 
     }
+}
+
+void IR_Handler() {
+    static bool lcd_bl = true;
+
+    if (irrecv.decode(&IR_result)) {
+	switch (IR_result.value) {
+	case IR_RGBZONE_POWER:
+	    lcd_bl = !lcd_bl;
+
+	    iotuz.screen_bl(lcd_bl);
+	    if (lcd_bl) {
+		Serial.println("Toggle LCD and LEDs on");
+		RGB_LED_BRIGHTNESS = 16;
+		LCD_BRIGHTNESS = 4;
+	    } else {
+		Serial.println("Toggle LCD and LEDs off");
+		RGB_LED_BRIGHTNESS = 0;
+		LCD_BRIGHTNESS = 0;
+	    }
+	    break;
+
+	case IR_JUNK:
+	    break;
+
+	default:
+	    Serial.print("Got unknown IR value: ");
+	    Serial.println(IR_result.value, HEX);
+	}
+	irrecv.resume(); // Receive the next value
+    }
+}
+
+// This implementation is nice on the port expander by avoiding to toggle it more often than needed
+// but it doesn't flip the brightness quickly enough and causes visible flickering as soon as you reach 75%
+// due to the 4ms+ during which the screen remains off
+#if 0
+void LCD_PWM_Handler() {
+    static uint8_t pwm_timer = 0;
+
+    if (pwm_timer++ == 16) {
+	pwm_timer = 0;
+	// when timer resets, turn screen on.
+	iotuz.screen_bl(true);
+	return;
+    }
+
+    // and only turn it off if it reaches the brightness level (for 16 = never)
+    if (pwm_timer == LCD_BRIGHTNESS) {
+	iotuz.screen_bl(false);
+    }
+
+}
+#endif
+
+// Scale everything down by 4, in the 50% case, sadly, we have 
+void LCD_PWM_Handler() {
+    static uint8_t pwm_timer = 0;
+
+    pwm_timer++;
+    // on off on off instead of on on off off for less visible flickering
+    if (LCD_BRIGHTNESS == 1) {
+	iotuz.screen_bl(pwm_timer % 2);
+	return;
+    }
+
+    if (pwm_timer == 4) {
+	pwm_timer = 0;
+	// when timer resets, turn screen on.
+	// unless brightness is all the way down to 0.
+	if (LCD_BRIGHTNESS) iotuz.screen_bl(true);
+	return;
+    }
+
+    // and only turn it off if it reaches the brightness level (for 16 = never)
+    if (pwm_timer == LCD_BRIGHTNESS+1) {
+	iotuz.screen_bl(false);
+    }
+
+}
+
+void Battery_Handler() {
+    sprintf(iotuz.tft_str, "Bat: %4.2fV", iotuz.battery_level());
+    iotuz.tftprint(0, 0, 11, iotuz.tft_str);
 }
 
 void loop() {
@@ -631,16 +748,29 @@ void loop() {
     static uint8_t select;
     
     if (need_select) {
+	// reset the screen
 	iotuz.reset_tft();
+	draw_choices();
+
+	// add overlays
+	sprintf(iotuz.tft_str, "LED Spd:%d", LED_SPEED);
+	iotuz.tftprint(29, 0, 10, iotuz.tft_str);
+	sprintf(iotuz.tft_str, "LED Bright:%d", RGB_LED_BRIGHTNESS);
+	iotuz.tftprint(40, 0, 13, iotuz.tft_str);
+	Battery_Handler();
 	DISABLE_RGB_HANDLER = 0;
 	DISABLE_ROTARY_HANDLER = 0;
-	draw_choices();
+
 	select = get_selection();
 	Serial.print("Got menu selection #");
 	Serial.println(select);
 	tft.fillScreen(ILI9341_BLACK);
     }
 
+    // Ok, this is tricky. the last row of demos does not come back through the
+    // loop. After they run, Aiko events stop. In turn backlight PWM stops too
+    // so we make sure it didn't just stop on an LCD off event.
+    if (select >= 20 and need_select)iotuz.screen_bl (true);
 
     // The first 4 demos display x/y coordinate text in the upper left corner
     // After the first time around the loop, need_select gets reset to false
@@ -674,16 +804,7 @@ void loop() {
 	led_color_selector();
 	break;
     case LEDOFF:
-#ifdef NEOPIXEL
-	pixels.setPixelColor(0, 0, 0, 0);
-	pixels.setPixelColor(1, 0, 0, 0);
-	pixels.show();
-#else
-	pixels[0] = makeRGBVal(0, 0, 0);
-	pixels[1] = makeRGBVal(0, 0, 0);
-	ws2812_setColors(NUMPIXELS, pixels);
-#endif
-	rgb_led_brightness = 0;
+	RGB_LED_BRIGHTNESS = 0;
 	// shortcut scan buttons below and go back to main menu
 	need_select = true;
 	return;
@@ -766,7 +887,10 @@ void setup() {
     Serial.println("Setting up Aiko event handlers");
 
     Events.addHandler(LED_Handler, 10);
-    Events.addHandler(LED_Brightness_Handler, 333);
+    Events.addHandler(Rotary_Handler, 333);
+    Events.addHandler(IR_Handler, 100);
+    Events.addHandler(LCD_PWM_Handler, 1);
+    Events.addHandler(Battery_Handler, 5000);
     // Make use of my ISR driven mini port of Andy Gelme's Aiko
     // Sadly, I cannot. Calling pixels.show() from an ISR causes crashes.
     //iotuz.enable_aiko_ISR();

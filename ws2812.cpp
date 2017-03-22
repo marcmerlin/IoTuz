@@ -288,6 +288,7 @@ void ws2812_setColors(uint16_t length, rgbVal *array)
   RMT.conf_ch[RMTCHANNEL].conf1.tx_start = 1;
 
   xSemaphoreTake(ws2812_sem, portMAX_DELAY);
+
   vSemaphoreDelete(ws2812_sem);
   ws2812_sem = NULL;
 

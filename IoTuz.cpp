@@ -42,6 +42,8 @@ Adafruit_ADXL345_Unified accel = Adafruit_ADXL345_Unified(12345);
 // Touch screen
 XPT2046_Touchscreen ts(TS_CS_PIN);  // Param 2 - NULL - No interrupts)
 
+IRrecv irrecv(IR_RX_PIN);
+decode_results IR_result;
 
 // If enabled by the user, call every millisecond and run the Aiko 
 // event loop.
@@ -124,7 +126,6 @@ void IoTuz::i2cexp_set_bits(uint8_t bitfield)
     _i2cexp |= bitfield;
     pcf8574_write_(_i2cexp);
 }
-
 uint8_t IoTuz::i2cexp_read()
 {
     // For read to work, we must have sent 1 bits on the ports that get used as input
@@ -178,6 +179,13 @@ ButtState IoTuz::read_encoder_button()
 // True turns the BL on
 void IoTuz::screen_bl(bool state) {
     state ? i2cexp_clear_bits(I2CEXP_LCD_BL_CTR) : i2cexp_set_bits(I2CEXP_LCD_BL_CTR);
+}
+
+
+float IoTuz::battery_level() 
+{
+    // return volts, 57 is what I hand calculated as a ratio
+    return(float(analogRead(BAT_PIN)/56.0));
 }
 
 void IoTuz::reset_tft() {
@@ -254,6 +262,11 @@ IoTuz::IoTuz()
     pinMode(TFT_CS, OUTPUT);
     pinMode(TFT_DC, OUTPUT);
     pinMode(TFT_RST, OUTPUT);
+
+    pinMode(IR_RX_PIN, INPUT);
+    pinMode(IR_TX_PIN, OUTPUT);
+
+    pinMode(BAT_PIN, INPUT);
 }
 
 void IoTuz::begin()
@@ -323,7 +336,9 @@ void IoTuz::begin()
     ws2812_init(RGB_LED_PIN, LED_WS2812B);
     pixels[0] = makeRGBVal(20, 20, 20);
     pixels[1] = makeRGBVal(0, 20, 0);
+    Serial.println("Before colors");
     ws2812_setColors(NUMPIXELS, pixels);
+    Serial.println("After colors");
 #endif
 
     Serial.println(F("LEDs turned on, setting up Accelerometer next"));
@@ -352,6 +367,12 @@ void IoTuz::begin()
     // Initialize rotary encoder reading and decoding
     attachInterrupt(ENCODERA_PIN, read_encoder_ISR, CHANGE);
     attachInterrupt(ENCODERB_PIN, read_encoder_ISR, CHANGE);
+
+    Serial.println("Enable IR receiver ISR:");
+    irrecv.enableIRIn();
+
+    // This is interesting to log in case the last setup hangs
+    Serial.println("IoTuz Setup done");
 }
 
 // vim:sts=4:sw=4
