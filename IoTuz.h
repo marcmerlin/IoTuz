@@ -1,7 +1,7 @@
 // MartyMacGyver/ESP32-Digital-RGB-LED-Drivers is not stable for me, so if you 
 // have crashes or problems, define this and RGB handling will switch to the adafruit
 // Neopixel library. That library is not very good (LEDs can flicker) but it's stable.
-//#define NEOPIXEL
+#define NEOPIXEL
 
 #ifndef IOTUZ_H
 #define IOTUZ_H
@@ -42,6 +42,9 @@ using namespace Aiko;
 #include <Adafruit_Sensor.h>
 #include <Adafruit_ADXL345_U.h>
 
+// Temp/Humidity/Pressure
+#include <Adafruit_BME280.h>
+
 // Touch screen https://github.com/PaulStoffregen/XPT2046_Touchscreen
 #include <XPT2046_Touchscreen.h>
 
@@ -61,7 +64,7 @@ IO_EXP: 0x20 => Spec sheet says
 device and sets the last bit of the address byte to logic 1 (address byte read)"
 The Wire lib automatically uses the right I/O port for read and write.
 ADXL:   0x53
-BME230: 0x77 (Temp/Humidity/Pressure)
+BME280: 0x77 (Temp/Humidity/Pressure)
 */
 
 #define IR_RX_PIN 35
@@ -138,6 +141,7 @@ extern Adafruit_NeoPixel pixels;
 extern rgbVal pixels[NUMPIXELS];
 #endif
 extern Adafruit_ADXL345_Unified accel;
+extern Adafruit_BME280 bme;
 extern XPT2046_Touchscreen ts;
 extern IRrecv irrecv;
 extern decode_results IR_result;

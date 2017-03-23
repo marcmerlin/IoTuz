@@ -34,6 +34,9 @@ rgbVal pixels[NUMPIXELS];
 // ADXL345
 Adafruit_ADXL345_Unified accel = Adafruit_ADXL345_Unified(12345);
 
+// Temp/Humidity/Pressure
+Adafruit_BME280 bme;
+
 // Until further notice, there is a hack to get HW SPI be as fast as SW SPI:
 // in espressif/esp32/cores/esp32/esp32-hal.h after the first define, add
 // #define CONFIG_DISABLE_HAL_LOCKS 1
@@ -138,7 +141,6 @@ uint8_t IoTuz::i2cexp_read()
     // Serial.println(read, HEX);
     return read;
 }
-
 int16_t IoTuz::read_encoder() 
 {
     return encoder0Pos;
@@ -184,8 +186,8 @@ void IoTuz::screen_bl(bool state) {
 
 float IoTuz::battery_level() 
 {
-    // return volts, 57 is what I hand calculated as a ratio
-    return(float(analogRead(BAT_PIN)/56.0));
+    // return volts, 75 is what I hand calculated as a ratio
+    return(float(analogRead(BAT_PIN)/75.0));
 }
 
 void IoTuz::reset_tft() {
@@ -197,6 +199,7 @@ void IoTuz::reset_tft() {
 }
 
 // maxlength is the maximum number of characters that need to be deleted before writing on top
+// 55x30 characters
 void IoTuz::tftprint(uint16_t x, uint16_t y, uint8_t maxlength, char *text) {
     if (maxlength > 0) tft.fillRect(x*6, y*8, maxlength*6, 8, ILI9341_BLACK);
     tft.setCursor(x*6, y*8);
@@ -274,8 +277,8 @@ void IoTuz::begin()
     Serial.begin(115200);
     Serial.println("Serial Begin");
 
-    // required for i2exp to work
-    Wire.begin();
+    // required for i2exp to work but redundant because called by other drivers below too
+    //Wire.begin();
 
     // Hardware SPI on ESP32 is actually slower than software SPI. Giving 80Mhz
     // here does not make things any faster. There seems to be a fair amount of
@@ -361,6 +364,30 @@ void IoTuz::begin()
     Serial.print  ("Resolution:   "); Serial.print(sensor.resolution); Serial.println(" m/s^2");  
     Serial.println("------------------------------------");
     Serial.println("");
+
+    if(!bme.begin()) {
+	/* there was a problem detecting the adxl345 ... check your connections */
+	Serial.println("Ooops, no BME280 detected ... Check your wiring!");
+	while(1);
+    }
+    // Wait a little bit for the BME to capture data
+    delay(100);
+    Serial.print("Temperature = ");
+    Serial.print(bme.readTemperature());
+    Serial.println(" *C");
+
+    Serial.print("Pressure = ");
+
+    Serial.print(bme.readPressure() / 100.0F);
+    Serial.println(" hPa");
+
+    Serial.print("Approx. Altitude = ");
+    Serial.print(bme.readAltitude(1013.25));
+    Serial.println(" m");
+
+    Serial.print("Humidity = ");
+    Serial.print(bme.readHumidity());
+    Serial.println(" %");
 
 
     Serial.println("Enable rotary encoder ISR:");

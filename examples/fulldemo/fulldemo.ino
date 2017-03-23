@@ -269,11 +269,7 @@ void accel_draw() {
     tft.fillCircle(int(pixel_x), int(pixel_y), 2, tenbitstocolor(update_cnt % 1024));
     // don't go all the way to the border, or the drawing will wrap to the other side of the screen.
     pixel_x = constrain(pixel_x + accel_x, 2, 318);
-// horrible (hopefully temporary) hack to not trigger a bug in RMT/WS2812 neopixel lib
-// Disabling tis line of code shifts things around in way that avoids the bug for now.
-#ifdef NEOPIXEL
     pixel_y = constrain(pixel_y + accel_y, 2, 238);
-#endif
 
     // Do not write the cursor values too often, it's too slow
     if (!(update_cnt++ % 32)) {
@@ -585,11 +581,18 @@ void LED_Handler() {
     // This needs to be static because some calls to rgbLedFade do not return a modified value
     // (holding a color at end of stage)
     static uint8_t red[NUMLED], green[NUMLED], blue[NUMLED];
+    static uint8_t oldred[NUMLED], oldgreen[NUMLED], oldblue[NUMLED];
+    bool changed = false;
 
     rgbLedFade(red, green, blue);
     for (uint8_t numled=0; numled<NUMLED; numled++) {
 	// APA106 Mapping is actually Green, Red, Blue (not RGB)
 	if (! DISABLE_RGB_HANDLER) {
+	    // Do not push re-display the same color already being displayed.
+	    if ( oldred[numled] == red[numled] && oldgreen[numled] == green[numled] && oldblue[numled] == blue[numled] ) continue;
+	    oldred[numled] = red[numled]; oldgreen[numled] = green[numled]; oldblue[numled] = blue[numled];
+	    changed = true;
+
 #ifdef NEOPIXEL
 	    pixels.setPixelColor(numled, green[numled], red[numled], blue[numled]);
 #else
@@ -607,7 +610,7 @@ void LED_Handler() {
 	Serial.println((int)blue[numled], HEX);
 #endif
     }
-    if (! DISABLE_RGB_HANDLER) {
+    if (! DISABLE_RGB_HANDLER && changed) {
 #ifdef NEOPIXEL
 	pixels.show();
 #else
@@ -739,8 +742,13 @@ void LCD_PWM_Handler() {
 }
 
 void Battery_Handler() {
-    sprintf(iotuz.tft_str, "Bat: %4.2fV", iotuz.battery_level());
-    iotuz.tftprint(0, 0, 11, iotuz.tft_str);
+    sprintf(iotuz.tft_str, "Bat:%4.2fV", iotuz.battery_level());
+    iotuz.tftprint(44, 29, 8, iotuz.tft_str);
+}
+
+void HumiTemp_Handler() {
+    sprintf(iotuz.tft_str, "%5.2fC hum:%2d%%", bme.readTemperature(), (int)bme.readHumidity());
+    iotuz.tftprint(0, 29, 14, iotuz.tft_str);
 }
 
 void loop() {
@@ -891,6 +899,7 @@ void setup() {
     Events.addHandler(IR_Handler, 100);
     Events.addHandler(LCD_PWM_Handler, 1);
     Events.addHandler(Battery_Handler, 5000);
+    Events.addHandler(HumiTemp_Handler, 5000);
     // Make use of my ISR driven mini port of Andy Gelme's Aiko
     // Sadly, I cannot. Calling pixels.show() from an ISR causes crashes.
     //iotuz.enable_aiko_ISR();
