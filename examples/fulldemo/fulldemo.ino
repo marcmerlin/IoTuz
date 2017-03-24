@@ -3,6 +3,7 @@
  ****************************************************/
 
 #include <IoTuz.h>
+#include <setjmp.h> 
 IoTuz iotuz = IoTuz();
 
 #include "tasmanian-devil.c"
@@ -17,6 +18,7 @@ bool DISABLE_RGB_HANDLER = 0;
 // Same with rotary encoder
 bool DISABLE_ROTARY_HANDLER = 1;
 
+jmp_buf jump_env;
 
 #define NUMLED 2
 // 5 is fast-ish, 1 is super duper fast, 50 is very very slow color transitions
@@ -245,7 +247,9 @@ void joystick_draw_relative() {
     tft.fillCircle(int(pixel_x), int(pixel_y), 2, tenbitstocolor(update_cnt % 1024));
     // don't go all the way to the border, or the drawing will wrap to the other side of the screen.
     pixel_x = constrain(pixel_x + move_x, 2, 318);
-    pixel_y = constrain(pixel_y + move_y, 2, 238);
+//#ifdef NEOPIXEL
+   pixel_y = constrain(pixel_y + move_y, 2, 238);
+//#endif
 
     // Do not write the cursor values too often, it's too slow
     if (!(update_cnt++ % 32)) {
@@ -662,6 +666,12 @@ void Rotary_Handler() {
     }
 }
 
+void lcd_flash(uint16_t color) {
+    tft.fillScreen(color);
+    delay(1000);
+    longjmp(jump_env, 1);
+}
+
 void IR_Handler() {
     static bool lcd_bl = true;
 
@@ -680,6 +690,18 @@ void IR_Handler() {
 		RGB_LED_BRIGHTNESS = 0;
 		LCD_BRIGHTNESS = 0;
 	    }
+	    break;
+
+	case IR_RGBZONE_RED:
+	    lcd_flash(ILI9341_RED);
+	    break;
+
+	case IR_RGBZONE_BLUE:
+	    lcd_flash(ILI9341_BLUE);
+	    break;
+
+	case IR_RGBZONE_GREEN:
+	    lcd_flash(ILI9341_GREEN);
 	    break;
 
 	case IR_JUNK:
@@ -754,6 +776,8 @@ void HumiTemp_Handler() {
 void loop() {
     static bool need_select = true;
     static uint8_t select;
+    int ret = setjmp (jump_env);
+    if (ret) need_select = true;
     
     if (need_select) {
 	// reset the screen

@@ -19,9 +19,10 @@ volatile int16_t encoder0Pos = 0;
 // These need to be global because all sketches use them as a global
 // tft adafruit library (games use tft2 a separate library, for which we skip the init
 // since the adafruit init works fine for both)
+// this ought to work, but I get a white screen sometimes if I use it.
+//Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC, SPI_MOSI, SPI_CLK, TFT_RST, SPI_MISO);
+// Whereas this shorter version works reliably for me
 Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC, TFT_RST);
-// faster, better lib, that doesn't work yet.
-//ILI9341_t3 tft = ILI9341_t3(TFT_CS, TFT_DC, TFT_RST);
 
 // If you are lacking the ESP32 patch, you will get no error, but the LEDs will not work
 #ifdef NEOPIXEL
@@ -280,24 +281,12 @@ void IoTuz::begin()
     // required for i2exp to work but redundant because called by other drivers below too
     //Wire.begin();
 
-    // Hardware SPI on ESP32 is actually slower than software SPI. Giving 80Mhz
-    // here does not make things any faster. There seems to be a fair amount of
-    // overhead in the fancier hw SPI on ESP32 which is designed to send more than
-    // one byte at the time, and only ends up sending one byte when called from an
-    // arduino library.
-    // Sadly, using software SPI in the adafruit library would prevent SPI from working
-    // in the touch screen code which only supports hardware SPI
-    // The TFT code runs at 24Mhz as per below, but testing shows that any speed over 2Mhz
-    // seems ignored and taken down to 2Mhz
-    //SPI.beginTransaction(SPISettings(24000000, MSBFIRST, SPI_MODE0));
-
-    // Talking to the touch screen can only work at 2Mhz, and both drivers change the SPI
-    // speed before sending data, so this works transparently.
-
     // ESP32 requires an extended begin with pin mappings (which is not supported by the
     // adafruit library), so we do an explicit begin here and then the other SPI libraries work
     // with hardware SPI as setup here (they will do a second begin without pin mappings and
     // that will be ignored).
+    // Actually the TFT lib works without this extra begin, but the touch screen library will
+    // not, so let's keep it.
     SPI.begin(SPI_CLK, SPI_MISO, SPI_MOSI);
 
     // Turn off TFT by default. 
@@ -322,29 +311,6 @@ void IoTuz::begin()
     Serial.print("Resolution: "); Serial.print(tftw); 
     Serial.print(" x "); Serial.println(tfth);
     Serial.println(F("Done!"));
-
-#ifdef NEOPIXEL
-    // Tri-color APA106 LEDs Setup
-    // Mapping is actually Green, Red, Blue (not RGB)
-    // Init LEDs to very dark (show they work, but don't blind)
-    pixels.begin();
-    // This first pixelcolor is ignored, not sure why
-    pixels.setPixelColor(0, 10, 10, 10);
-    pixels.setPixelColor(1, 5, 5, 5);
-    pixels.show();
-    // this one works.
-    //pixels.setPixelColor(0, 10, 10, 10);
-    //pixels.show();
-#else
-    ws2812_init(RGB_LED_PIN, LED_WS2812B);
-    pixels[0] = makeRGBVal(20, 20, 20);
-    pixels[1] = makeRGBVal(0, 20, 0);
-    Serial.println("Before colors");
-    ws2812_setColors(NUMPIXELS, pixels);
-    Serial.println("After colors");
-#endif
-
-    Serial.println(F("LEDs turned on, setting up Accelerometer next"));
 
     // init accel
     if(!accel.begin()) {
@@ -397,6 +363,28 @@ void IoTuz::begin()
 
     Serial.println("Enable IR receiver ISR:");
     irrecv.enableIRIn();
+
+    Serial.println(F("Turning on LEDs"));
+#ifdef NEOPIXEL
+    // Tri-color APA106 LEDs Setup
+    // Mapping is actually Green, Red, Blue (not RGB)
+    // Init LEDs to very dark (show they work, but don't blind)
+    pixels.begin();
+    // This first pixelcolor is ignored, not sure why
+    pixels.setPixelColor(0, 10, 10, 10);
+    pixels.setPixelColor(1, 5, 5, 5);
+    pixels.show();
+    // this one works.
+    //pixels.setPixelColor(0, 10, 10, 10);
+    //pixels.show();
+#else
+    ws2812_init(RGB_LED_PIN, LED_WS2812B);
+    pixels[0] = makeRGBVal(20, 20, 20);
+    pixels[1] = makeRGBVal(0, 20, 0);
+    Serial.println("Before colors");
+    ws2812_setColors(NUMPIXELS, pixels);
+    Serial.println("After colors");
+#endif
 
     // This is interesting to log in case the last setup hangs
     Serial.println("IoTuz Setup done");
