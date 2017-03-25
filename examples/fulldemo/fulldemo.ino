@@ -214,7 +214,6 @@ void joystick_draw() {
 }
 
 void rotary_encoder() {
-
     int16_t   encoder = iotuz.read_encoder();
     ButtState encoder_button = iotuz.read_encoder_button();
     int16_t offset;
@@ -440,9 +439,19 @@ void draw_choices(void) {
 
 }
 
-// FIXME: unused
 void show_selected_box(uint8_t x, uint8_t y) {
-    tft.fillRect(x*boxw, y*boxh, boxw, boxh, ILI9341_LIGHTGREY);
+    tft.fillRect(x*boxw+1, y*boxh+1, boxw-1, boxh-1, ILI9341_LIGHTGREY);
+    for (uint16_t i=0; i<200; i++) {
+	delay(1);
+	// Ensure Aiko events can run.
+	Events.loop();
+    }
+    tft.fillRect(x*boxw+1, y*boxh+1, boxw-1, boxh-1, ILI9341_BLACK);
+    for (uint16_t i=0; i<200; i++) {
+	delay(1);
+	// Ensure Aiko events can run.
+	Events.loop();
+    }
 }
 
 uint8_t get_selection(void) {
@@ -468,6 +477,8 @@ uint8_t get_selection(void) {
     Serial.print(y);
     Serial.print(" pressure: ");
     Serial.println(p.z);
+    show_selected_box(x, y);
+	
     return (x + y*NHORIZ);
 }
 
@@ -669,6 +680,10 @@ void Rotary_Handler() {
 void lcd_flash(uint16_t color) {
     tft.fillScreen(color);
     delay(1000);
+    // Here, we want to get back to the main display loop, from whereever we happened
+    // to be. Given that we're 2 functions deep and called by an interrupt handler potentially
+    // longjump is the best way to unroll those functions and jump back to the main loop.
+    // If you are not familiar: http://www.cplusplus.com/reference/csetjmp/longjmp/
     longjmp(jump_env, 1);
 }
 
@@ -676,6 +691,7 @@ void IR_Handler() {
     static bool lcd_bl = true;
 
     if (irrecv.decode(&IR_result)) {
+	irrecv.resume(); // Receive the next value
 	switch (IR_result.value) {
 	case IR_RGBZONE_POWER:
 	    lcd_bl = !lcd_bl;
@@ -711,7 +727,6 @@ void IR_Handler() {
 	    Serial.print("Got unknown IR value: ");
 	    Serial.println(IR_result.value, HEX);
 	}
-	irrecv.resume(); // Receive the next value
     }
 }
 
@@ -765,7 +780,7 @@ void LCD_PWM_Handler() {
 
 void Battery_Handler() {
     sprintf(iotuz.tft_str, "Bat:%4.2fV", iotuz.battery_level());
-    iotuz.tftprint(44, 29, 8, iotuz.tft_str);
+    iotuz.tftprint(44, 29, 9, iotuz.tft_str);
 }
 
 void HumiTemp_Handler() {
@@ -776,6 +791,8 @@ void HumiTemp_Handler() {
 void loop() {
     static bool need_select = true;
     static uint8_t select;
+    // See lcd_flash's longjmp and
+    // http://www.cplusplus.com/reference/csetjmp/setjmp/
     int ret = setjmp (jump_env);
     if (ret) need_select = true;
     

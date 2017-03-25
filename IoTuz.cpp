@@ -38,11 +38,6 @@ Adafruit_ADXL345_Unified accel = Adafruit_ADXL345_Unified(12345);
 // Temp/Humidity/Pressure
 Adafruit_BME280 bme;
 
-// Until further notice, there is a hack to get HW SPI be as fast as SW SPI:
-// in espressif/esp32/cores/esp32/esp32-hal.h after the first define, add
-// #define CONFIG_DISABLE_HAL_LOCKS 1
-// Use with caution, this may cause unknown issues
-
 // Touch screen
 XPT2046_Touchscreen ts(TS_CS_PIN);  // Param 2 - NULL - No interrupts)
 
