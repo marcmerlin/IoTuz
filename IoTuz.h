@@ -13,23 +13,16 @@
 using namespace Aiko;
 
 #include <Adafruit_GFX.h>
-// Support for LCD screen
-// The latest version of that library may not be up to date and miss a patch for ESP32
-// which will cause a compilation error:
-// Adafruit_ILI9341.cpp:113:3: error: 'mosiport' was not declared in this scope
-// If so, get the latest version from github, or just patch this single line
-// https://github.com/adafruit/Adafruit_ILI9341/blob/master/Adafruit_ILI9341.cpp#L98
+// You need a recent github version of this library, including this patch:
+// https://github.com/adafruit/Adafruit_ILI9341/pull/26
 #include <Adafruit_ILI9341.h>
-// faster, better lib, that doesn't work yet.
-//#include <ILI9341_t3.h>
 
 // https://learn.adafruit.com/adafruit-neopixel-uberguide/
 // Support for APA106 RGB LEDs
 // APA106 is somewhat compatible with WS2811 or WS2812 (well, maybe not 100%, but close enough to work)
-// I have patched the Adafruit library to support ESP32. If that hasn't been merged yet, see this patch
-// https://github.com/adafruit/Adafruit_NeoPixel/pull/125
-// If you do NOT apply my patch, the LEDS WILL NOT WORK
-// Ok, even with my patch, bit banging does not work well with ESP32
+// Note that bit banging in that library does not work well because ESP32 is not a real
+// time processor and may interrupt the arduino task in the middle of a bit bang and 
+// cause delays that end up sending the wrong color.
 #ifdef NEOPIXEL
 #include "Adafruit_NeoPixel.h"
 #endif

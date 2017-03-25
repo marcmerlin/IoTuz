@@ -387,6 +387,7 @@ void scan_buttons(bool *need_select) {
 	butB = true;
 	iotuz.tftprint(0, 3, 0, "But B");
 	*need_select = true;
+	Serial.println("Button B pushed, going back to main menu");
     }
     if (!(butt_state & I2CEXP_B_BUT) && butB)
     {
@@ -684,6 +685,7 @@ void lcd_flash(uint16_t color) {
     // to be. Given that we're 2 functions deep and called by an interrupt handler potentially
     // longjump is the best way to unroll those functions and jump back to the main loop.
     // If you are not familiar: http://www.cplusplus.com/reference/csetjmp/longjmp/
+    Serial.println("Screen color flashed via IM, longjmp back to main loop");
     longjmp(jump_env, 1);
 }
 
@@ -794,7 +796,10 @@ void loop() {
     // See lcd_flash's longjmp and
     // http://www.cplusplus.com/reference/csetjmp/setjmp/
     int ret = setjmp (jump_env);
-    if (ret) need_select = true;
+    if (ret) {
+	Serial.println("Returned to main loop via longjmp");
+	need_select = true;
+    }
     
     if (need_select) {
 	// reset the screen
