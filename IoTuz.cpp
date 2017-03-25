@@ -357,6 +357,9 @@ void IoTuz::begin()
     attachInterrupt(ENCODERB_PIN, read_encoder_ISR, CHANGE);
 
     Serial.println("Enable IR receiver ISR:");
+    // Sigh, enabling this hardware interrupt makes I2C unreliable.
+    // Thankfully this HAL patch fixes the issue
+    // https://github.com/espressif/arduino-esp32/issues/286
     irrecv.enableIRIn();
 
     Serial.println(F("Turning on LEDs"));
