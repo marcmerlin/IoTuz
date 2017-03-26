@@ -25,17 +25,17 @@ IoTuz iotuz = IoTuz();
 #include "FrameParams.h"
 
 // Animations
-#include "Checkerboard.h"
+// #include "Checkerboard.h"
 #include "Cube3D.h"
-#include "Leaves.h"
+// #include "Leaves.h"
 #include "MagentaSquares.h"
 //#include "MicCheck.h"
 #include "PlasmaCloud.h"
 #include "PlasmaYellow.h"
 #include "Sphere3D.h"
-#include "TriangleWeb.h"
-#include "TwistyText.h"
-#include "Waveform.h"
+// #include "TriangleWeb.h"
+// #include "TwistyText.h"
+// #include "Waveform.h"
 
 // Transitions
 #include "TransitionDither.h"
@@ -77,16 +77,16 @@ const uint8_t BACKLIGHT_PIN = 33;
 FrameParams frameParams;
 long previousMillis = 0;
 
-Checkerboard * _checkerboard       = new Checkerboard();
+// Checkerboard * _checkerboard       = new Checkerboard();
 Cube3D * _cube3D                   = new Cube3D();
-Leaves * _leaves                   = new Leaves();
+// Leaves * _leaves                   = new Leaves();
 MagentaSquares * _magentaSquares   = new MagentaSquares();
 PlasmaCloud * _plasmaCloud         = new PlasmaCloud();
 PlasmaYellow * _plasmaYellow       = new PlasmaYellow();
 Sphere3D * _sphere3D               = new Sphere3D();
-TriangleWeb * _triangleWeb         = new TriangleWeb();
-TwistyText * _twistyText           = new TwistyText();
-Waveform * _waveform               = new Waveform();
+// TriangleWeb * _triangleWeb         = new TriangleWeb();
+// TwistyText * _twistyText           = new TwistyText();
+// Waveform * _waveform               = new Waveform();
 
 TransitionDither * _transDither  = new TransitionDither();
 TransitionHalftone * _transHalftone  = new TransitionHalftone();

@@ -6,6 +6,10 @@
 #include <setjmp.h> 
 IoTuz iotuz = IoTuz();
 
+// Due to crappy arduino IDE/compiler semantics, this include is actually needed
+// in DemoSauce.ino but must be included here, or DemoSauce will not work
+#include "BaseAnimation.h"
+
 #include "tasmanian-devil.c"
 
 bool butA   = false;
@@ -14,9 +18,11 @@ bool butEnc = false;
 uint16_t joyValueX;
 uint16_t joyValueY;
 // When driving the LEDs directly, turn off the background handler that controls the LEDs
-bool DISABLE_RGB_HANDLER = 0;
+bool DISABLE_RGB_HANDLER = false;
 // Same with rotary encoder
-bool DISABLE_ROTARY_HANDLER = 1;
+bool DISABLE_ROTARY_HANDLER = false;
+// Are we running a demo we should not clobber with status text?
+bool DISABLE_OVERLAY_TEXT = false;
 
 jmp_buf jump_env;
 
@@ -41,7 +47,7 @@ char* opt_name[NVERT][NHORIZ][3] = {
     { { "Select", "LEDs", "Color"}, { "Rotary", "For Bright", "LED Off"}, { "", "Rotary", "Encoder"}, { "", "Round", "Rects"}, { "Round", "Fill", "Rects"}, },
     { { "", "Text", ""}, { "", "Fill", ""}, { "", "Diagonal", "Lines"}, { "Horizon", "Vert", "Lines"}, { "", "Rectangle", ""}, },
     { { "", "Fill", "Rectangle"}, { "", "Circles", ""}, { "", "Fill", "Circles"}, { "", "Triangles", ""}, { "", "Fill", "Triangles"}, },
-    { { "", "Tetris", ""}, { "", "Breakout", ""}, { "", "", ""}, { "", "", ""}, { "", "", ""}, },
+    { { "", "Tetris", ""}, { "", "Breakout", ""}, { "", "DemoSauce", ""}, { "", "", ""}, { "", "", ""}, },
 };
 // tft_width, tft_height, calculated in setup after tft init
 uint16_t tftw, tfth;
@@ -73,6 +79,7 @@ typedef enum {
     TRIFILL = 19,
     TETRIS = 20,
     BREAKOUT = 21,
+    DEMOSAUCE = 22,
 } LCDtest;
 
 void lcd_test(LCDtest choice) {
@@ -754,7 +761,8 @@ void LCD_PWM_Handler() {
 }
 #endif
 
-// Scale everything down by 4, in the 50% case, sadly, we have 
+// We can only afford 4 levels of brightness at 1Hz, otherwise we get too much flickering
+// and the I/O expander doesn't really support much faster flipping anyway.
 void LCD_PWM_Handler() {
     static uint8_t pwm_timer = 0;
 
@@ -781,11 +789,13 @@ void LCD_PWM_Handler() {
 }
 
 void Battery_Handler() {
+    if (DISABLE_OVERLAY_TEXT) return;
     sprintf(iotuz.tft_str, "Bat:%4.2fV", iotuz.battery_level());
     iotuz.tftprint(44, 29, 9, iotuz.tft_str);
 }
 
 void HumiTemp_Handler() {
+    if (DISABLE_OVERLAY_TEXT) return;
     sprintf(iotuz.tft_str, "%5.2fC hum:%2d%%", bme.readTemperature(), (int)bme.readHumidity());
     iotuz.tftprint(0, 29, 14, iotuz.tft_str);
 }
@@ -793,6 +803,7 @@ void HumiTemp_Handler() {
 void loop() {
     static bool need_select = true;
     static uint8_t select;
+
     // See lcd_flash's longjmp and
     // http://www.cplusplus.com/reference/csetjmp/setjmp/
     int ret = setjmp (jump_env);
@@ -812,8 +823,9 @@ void loop() {
 	sprintf(iotuz.tft_str, "LED Bright:%d", RGB_LED_BRIGHTNESS);
 	iotuz.tftprint(40, 0, 13, iotuz.tft_str);
 	Battery_Handler();
-	DISABLE_RGB_HANDLER = 0;
-	DISABLE_ROTARY_HANDLER = 0;
+	DISABLE_RGB_HANDLER = false;
+	DISABLE_ROTARY_HANDLER = false;
+	DISABLE_OVERLAY_TEXT = false;
 
 	select = get_selection();
 	Serial.print("Got menu selection #");
@@ -832,9 +844,11 @@ void loop() {
     if (select <= 3 and need_select) reset_textcoord();
     switch (select) {
     case FINGERPAINT:
+	DISABLE_OVERLAY_TEXT = true;
 	finger_draw();
 	break;
     case TOUCHPAINT:
+	DISABLE_OVERLAY_TEXT = true;
 	// First time around the loop, draw a color selection circle
 	if (need_select) touchpaint_setup();
 	touchpaint_loop();
@@ -853,7 +867,8 @@ void loop() {
 	// and turn off RGB handler
 	if (need_select) { 
 	    draw_color_selector();
-	    DISABLE_RGB_HANDLER = 1;
+	    DISABLE_RGB_HANDLER = true;
+	    DISABLE_OVERLAY_TEXT = true;
 	}
 	led_color_selector();
 	break;
@@ -866,7 +881,8 @@ void loop() {
     case ROTARTYENC:
 	if (need_select) {
 	    show_logo();
-	    DISABLE_ROTARY_HANDLER = 1;
+	    DISABLE_ROTARY_HANDLER = true;
+	    DISABLE_OVERLAY_TEXT = true;
 	}
 	rotary_encoder();
 	break;
@@ -880,8 +896,17 @@ void loop() {
 	if (need_select) breakout_setup();
 	breakout_loop();
 	break;
+    case DEMOSAUCE:
+	// First time around the loop, draw a color selection circle
+	if (need_select) {
+	    DISABLE_OVERLAY_TEXT = true;
+	    demosauce_setup();
+	}
+	demosauce_loop();
+	break;
     default:
 	if (select >= 8) {
+	    DISABLE_OVERLAY_TEXT = true;
 	    Serial.print("Running LCD Demo #");
 	    Serial.println(select);
 	    lcd_test((LCDtest) select);
@@ -931,7 +956,7 @@ void setup() {
     tft.setTextColor(ILI9341_BLACK);
     iotuz.tftprint(1, 1, 0, "Click joystick or rotary encoder");
     tft.setTextColor(ILI9341_WHITE);
-    for (uint8_t i=0; i<50; i++) {
+    for (uint8_t i=0; i<20; i++) {
 	delay(100);
 	if (iotuz.read_encoder_button() == ENC_RELEASED || !digitalRead(JOYSTICK_BUT_PIN)) {
 	    Serial.println("Button clicked");

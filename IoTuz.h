@@ -1,7 +1,7 @@
 // MartyMacGyver/ESP32-Digital-RGB-LED-Drivers is not stable for me, so if you 
 // have crashes or problems, define this and RGB handling will switch to the adafruit
 // Neopixel library. That library is not very good (LEDs can flicker) but it's stable.
-//#define NEOPIXEL
+#define NEOPIXEL
 
 #ifndef IOTUZ_H
 #define IOTUZ_H

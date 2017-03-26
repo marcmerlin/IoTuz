@@ -57,6 +57,9 @@ void dumpDebugBuffer(int id, char * debugBuffer) {
 }
 
 void setup() {
+    Serial.begin(115200);
+    Serial.print(">>> ");
+    Serial.println(analogRead(JOYSTICK_X_PIN));
     iotuz.begin();
     // backlight is off by default, turn it on.
     iotuz.screen_bl(true);
@@ -70,6 +73,8 @@ void setup() {
     pixels[0] = makeRGBVal(32, 0, 0);
     pixels[1] = makeRGBVal(0, 0, 32);
     ws2812_setColors(NUMPIXELS, pixels);
+    Serial.print(">>> ");
+    Serial.println(analogRead(JOYSTICK_X_PIN));
 
     tft.drawBitmap(0, 0, 320, 240, (uint16_t*)picture3);
     tft.setTextColor(ILI9341_BLACK);
@@ -93,6 +98,8 @@ void loop() {
   pixels[1] = makeRGBVal(0, 0, color++);
   ws2812_setColors(2, pixels);
   delay(5);
+  Serial.print(">>> ");
+  Serial.println(analogRead(JOYSTICK_X_PIN));
 }
 
 void loop_FOR_DEBUG_TESTING() {
