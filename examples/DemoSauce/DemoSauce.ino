@@ -46,16 +46,24 @@ IoTuz iotuz = IoTuz();
 const boolean DO_BENCHMARKS = true;
 const uint32_t SERIAL_BAUD_RATE = 115200;
 
-// Some anims crash on my board (not enough power?
-// These anims work: 1, 4, 5 works a bit and then crashes, 6, 7, 8, 9
+// 0/TwistyText => hang
+// 1/PlasmaCloud
+//x2/Waveform -> yellow screen and hang
+// 3/MagentaSquares > very pretty squares
+// 4/Sphere3D -> sphere with spikes
+//x5/Checkerboard -> zoom in and out and then hang
+// 6/Leaves -> fill the screen with dots, so so
+// 7/Cube3D -> rotating spheres in elongated box fashion
+// 8/PlasmaYellow
+// 9/TriangleWeb => so so
 // FIXME: set this to false for all the anims to run (if they don't crash on your board)
-const boolean DEBUG_ANIM = true; // dev: for hacking on one animation.
-const uint_fast8_t DEBUG_ANIM_INDEX = 4;
+const boolean DEBUG_ANIM = false; // dev: for hacking on one animation.
+const uint_fast8_t DEBUG_ANIM_INDEX = 0;
 
 const boolean DEBUG_TRANSITION = false;  // dev: set to true for short animation durations
 const int_fast8_t DEBUG_TRANSITION_INDEX = -1;  // Supports -1: chooses a transition at random
 
-const int_fast16_t DEFAULT_ANIM_TIME = 20.0f * 1000.0f;  // ms
+const int_fast16_t DEFAULT_ANIM_TIME = 5.0f * 1000.0f;  // ms
 
 // TFT pins
 //const uint8_t TFT_DC = 9;
@@ -160,16 +168,16 @@ void setup() {
 
   // Populate anims in the order you want them to display.
   BaseAnimation* ANIMS_TEMP[] = {
-    _twistyText,
-    _plasmaCloud,
-    _waveform,
-    _magentaSquares,
-    _sphere3D,
-    _checkerboard,
-    _leaves,
-    _cube3D,
-    _plasmaYellow,
-    _triangleWeb
+//    _twistyText,
+    _plasmaCloud,   // ok
+//    _waveform,
+    _magentaSquares, // awesome
+    _sphere3D,	     // ok
+//    _checkerboard, // crashes after 10 seconds
+//    _leaves,         // boring
+    _cube3D,         // ok
+    _plasmaYellow,   // ok-ish
+//    _triangleWeb   // boring
   };
   animCount = sizeof( ANIMS_TEMP ) / sizeof( BaseAnimation* );
 

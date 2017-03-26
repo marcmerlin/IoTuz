@@ -6,6 +6,8 @@
 #include "MathUtil.h"
 #include "BaseTransition.h"
 
+#define setScroll scrollTo
+#define writeRect drawBitmap
 
 const float TRANSITION_SCROLL_SPEED = 0.0014f;
 const float SCROLL_WRAPS = 5.0f;
