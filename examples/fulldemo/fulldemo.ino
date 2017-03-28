@@ -435,6 +435,8 @@ void draw_choices(void) {
 		tft.setCursor(x*boxw + 4, y*boxh + line*8 + 16);
 		if (y*NHORIZ+x == 1 || y*NHORIZ+x == 5 || y*NHORIZ+x == 20 || y*NHORIZ+x == 21) {
 		    tft.setTextColor(ILI9341_RED);
+		} else if (y*NHORIZ+x == 22) {
+		    tft.setTextColor(ILI9341_GREEN);
 		} else if (y*NHORIZ+x == 4 || y*NHORIZ+x == 7) {
 		    tft.setTextColor(ILI9341_BLUE);
 		} else {
