@@ -362,6 +362,8 @@ void IoTuz::begin()
     // https://github.com/espressif/arduino-esp32/issues/286
     irrecv.enableIRIn();
 
+    Serial.print("Analogread test before LEDs enabled, returns 1780 or so): ");
+    Serial.println(analogRead(JOYSTICK_X_PIN));
     Serial.println(F("Turning on LEDs"));
 #ifdef NEOPIXEL
     // Tri-color APA106 LEDs Setup
@@ -383,6 +385,8 @@ void IoTuz::begin()
     ws2812_setColors(NUMPIXELS, pixels);
     Serial.println("After colors");
 #endif
+    Serial.print("Analogread test after LEDs enabled, returns 3 if RMT is turned on): ");
+    Serial.println(analogRead(JOYSTICK_X_PIN));
 
     // This is interesting to log in case the last setup hangs
     Serial.println("IoTuz Setup done");
