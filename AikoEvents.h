@@ -14,6 +14,7 @@ namespace Aiko {
     Callback callback_;
     unsigned int period_;
     long countdown_;
+    bool in_ISR;
     struct EventHandler* next_;
 
     void fire() { callback_(); }
@@ -40,9 +41,9 @@ namespace Aiko {
     public:
       EventManager() { reset(); }
       void addHandler(EventHandler* handler);
-      void addHandler(void (*handler)(), unsigned int interval, unsigned int delay = 0);
+      void addHandler(void (*handler)(), unsigned int interval, bool in_ISR = 0, unsigned int delay = 0);
       void addOneShotHandler(void (*handler)(), unsigned int delay);
-      void loop(unsigned long time = millis());
+      void loop(bool run_ISR=false, unsigned long time = millis());
       void removeHandler(EventHandler* handler);
       void reset();
       

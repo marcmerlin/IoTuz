@@ -63,9 +63,10 @@ namespace Aiko {
     handlerList_.add(handler);
   }
 
-  void EventManager::addHandler(void (*handlerFunction)(), unsigned int period, unsigned int delay) {
+  void EventManager::addHandler(void (*handlerFunction)(), unsigned int period, bool in_ISR, unsigned int delay) {
     EventHandler* handler = static_cast<EventHandler*>(malloc(sizeof(EventHandler)));
     handler->callback_  = functionCallback(handlerFunction);
+    handler->in_ISR     = in_ISR;
     handler->period_    = period;
     handler->countdown_ = delay;
     addHandler(handler);
@@ -75,15 +76,19 @@ namespace Aiko {
     addHandler(handlerFunction, 0, delay);
   }
 
-  void EventManager::loop(unsigned long time) {
+  void EventManager::loop(bool run_ISR, unsigned long time) {
     if (!isRunning_) start(time);
     long elapsed = time - lastLoopTime_;
 
     handlerList_.resetIterator();
-    while (EventHandler* handler = handlerList_.next()) handler->countdown_ -= elapsed;
+    while (EventHandler* handler = handlerList_.next()) {
+      if (handler->in_ISR != run_ISR) continue;
+      handler->countdown_ -= elapsed;
+    }
       
     handlerList_.resetIterator();
     while (EventHandler* handler = handlerList_.next()) {
+      if (handler->in_ISR != run_ISR) continue;
       if (handler->countdown_ <= 0) {
         handler->fire();
         if (handler->period_ > 0)

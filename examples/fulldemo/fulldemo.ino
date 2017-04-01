@@ -975,6 +975,7 @@ void setup() {
     Events.addHandler(HumiTemp_Handler, 5000);
     // Make use of my ISR driven mini port of Andy Gelme's Aiko
     // Sadly, I cannot. Calling pixels.show() from an ISR causes crashes.
+    // Currently I have no code that is ISR safe and could be called here.
     //iotuz.enable_aiko_ISR();
 
     Serial.println("Aiko Event handlers installed");

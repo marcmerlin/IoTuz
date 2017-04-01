@@ -118,7 +118,7 @@ BME280: 0x77 (Temp/Humidity/Pressure)
 #define TS_MINY 220
 #define TS_MAXX 3920
 #define TS_MAXY 3820
-#define MINPRESSURE 400
+#define MINPRESSURE 500
 #define MAXPRESSURE 3000
 
 // Touch screen select is on port expander line 6, not directly connected, so the library

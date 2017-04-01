@@ -47,7 +47,8 @@ decode_results IR_result;
 // If enabled by the user, call every millisecond and run the Aiko 
 // event loop.
 void onTimer() {
-    Events.loop();
+    // Only run ISR loop events (those must be ISR safe obviously)
+    Events.loop(true);
 }
 
 // Aiko can be run from the sketch's mail loop by simply calling Events.loop();
