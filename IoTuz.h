@@ -1,3 +1,4 @@
+#define WROVER
 // MartyMacGyver/ESP32-Digital-RGB-LED-Drivers is not stable for me, so if you 
 // have crashes or problems, define this and RGB handling will switch to the adafruit
 // Neopixel library. That library is not very good (LEDs can flicker) but it's stable.
@@ -25,11 +26,11 @@ using namespace Aiko;
 // cause delays that end up sending the wrong color.
 #ifdef NEOPIXEL
 #include "Adafruit_NeoPixel.h"
-#endif
-
+#else
 // Instead use this library that was designed to use the ESP32 IO hardware
 // https://github.com/MartyMacGyver/ESP32-Digital-RGB-LED-Drivers.git
 #include "ws2812.h"
+#endif
 
 // Accelerometer
 #include <Adafruit_Sensor.h>
@@ -68,8 +69,18 @@ BME280: 0x77 (Temp/Humidity/Pressure)
 #define JOYSTICK_Y_PIN 34
 #define JOYSTICK_BUT_PIN 0
 
+// Pins unused by this code
+#define I2C_EXPANDER_INT 25
+#define ADC_OUT	    27
+#define SD2_SPI	    9
+#define I2S_MCLK    16
+#define I2S_DAC_IN  17
+#define I2S_DCLK    5
+#define I2S_FS	    18
+#define UART)RX	    1
+#define UART_TX	    3
+
 // TFT + Touch Screen Setup Start
-// These are the minimal changes from v0.1 to get the LCD working
 #define TFT_DC 4
 #define TFT_CS 19
 #define TFT_RST 32
@@ -77,6 +88,7 @@ BME280: 0x77 (Temp/Humidity/Pressure)
 #define SPI_MISO 12
 #define SPI_MOSI 13
 #define SPI_CLK 14
+
 
 // Rotary Encocer
 #define ENCODERA_PIN 15
@@ -126,6 +138,25 @@ BME280: 0x77 (Temp/Humidity/Pressure)
 // pin so that it doesn't break anything else.
 // CS is then toggled manually before talking to the touch screen.
 #define TS_CS_PIN  33
+
+
+#ifdef WROVER
+#define TFT_DC 21
+#define TFT_CS 22
+#define TFT_RST 18
+#define SPI_MISO 25
+#define SPI_MOSI 23
+#define SPI_CLK 19
+#define LCD_BL_CTR 5
+#define RGB_LED_PIN 0
+#define TFT_CS 0
+// ILI9341 Test!
+// Display Power Mode: 0x9C
+// MADCTL Mode: 0x48
+// Pixel Format: 0x5
+// Image Format: 0x0
+// Self Diagnostic: 0xC0
+#endif
 
 extern Adafruit_ILI9341 tft;
 #ifdef NEOPIXEL

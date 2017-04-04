@@ -19,10 +19,15 @@ volatile int16_t encoder0Pos = 0;
 // These need to be global because all sketches use them as a global
 // tft adafruit library (games use tft2 a separate library, for which we skip the init
 // since the adafruit init works fine for both)
-// this ought to work, but I get a white screen sometimes if I use it.
-//Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC, SPI_MOSI, SPI_CLK, TFT_RST, SPI_MISO);
 // Whereas this shorter version works reliably for me
+#ifndef WROVER
 Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC, TFT_RST);
+#else
+// software SPI ought to work on IoTuz, but I get a white screen sometimes if I use it.
+// It's for nwo required on WROVER
+Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC, SPI_MOSI, SPI_CLK, TFT_RST, SPI_MISO);
+#endif
+
 
 // If you are lacking the ESP32 patch, you will get no error, but the LEDs will not work
 #ifdef NEOPIXEL
@@ -102,6 +107,7 @@ void IoTuz::pcf8574_write_(uint8_t dt)
 {
     uint8_t error;
 
+#ifndef WROVER
     Wire.beginTransmission(I2C_EXPANDER);
     // Serial.print("Writing to I2CEXP: ");
     // Serial.println(dt);
@@ -110,6 +116,7 @@ void IoTuz::pcf8574_write_(uint8_t dt)
     if (error != ku8TWISuccess) {
 	    // FIXME: do something here if you like
     }
+#endif
 }
 
 // To clear bit #7, send 128
@@ -128,6 +135,7 @@ void IoTuz::i2cexp_set_bits(uint8_t bitfield)
 }
 uint8_t IoTuz::i2cexp_read()
 {
+#ifndef WROVER
     // For read to work, we must have sent 1 bits on the ports that get used as input
     // This is done by i2cexp_clear_bits called in setup.
     Wire.requestFrom(I2C_EXPANDER, 1);	// FIXME: deal with returned error here?
@@ -137,6 +145,7 @@ uint8_t IoTuz::i2cexp_read()
     // we use as output, so we do need to filter out the ports used as read.
     // Serial.println(read, HEX);
     return read;
+#endif
 }
 int16_t IoTuz::read_encoder() 
 {
@@ -177,7 +186,12 @@ ButtState IoTuz::read_encoder_button()
 
 // True turns the BL on
 void IoTuz::screen_bl(bool state) {
+#ifndef WROVER
     state ? i2cexp_clear_bits(I2CEXP_LCD_BL_CTR) : i2cexp_set_bits(I2CEXP_LCD_BL_CTR);
+#else
+    pinMode(LCD_BL_CTR, OUTPUT);
+    digitalWrite(LCD_BL_CTR, LOW);
+#endif
 }
 
 
@@ -283,7 +297,9 @@ void IoTuz::begin()
     // that will be ignored).
     // Actually the TFT lib works without this extra begin, but the touch screen library will
     // not, so let's keep it.
+#ifndef WROVER
     SPI.begin(SPI_CLK, SPI_MISO, SPI_MOSI);
+#endif
 
     // Turn off TFT by default. 
     // Note this also initializes the read bits on PCF8574 by setting them to 1 as per I2CEXP_IMASK
@@ -308,11 +324,11 @@ void IoTuz::begin()
     Serial.print(" x "); Serial.println(tfth);
     Serial.println(F("Done!"));
 
+#ifndef WROVER
     // init accel
     if(!accel.begin()) {
 	/* there was a problem detecting the adxl345 ... check your connections */
 	Serial.println("Ooops, no ADXL345 detected ... Check your wiring!");
-	while(1);
     }
     accel.setRange(ADXL345_RANGE_16_G);
     sensor_t sensor;
@@ -330,7 +346,6 @@ void IoTuz::begin()
     if(!bme.begin()) {
 	/* there was a problem detecting the adxl345 ... check your connections */
 	Serial.println("Ooops, no BME280 detected ... Check your wiring!");
-	while(1);
     }
     // Wait a little bit for the BME to capture data
     delay(100);
@@ -350,6 +365,7 @@ void IoTuz::begin()
     Serial.print("Humidity = ");
     Serial.print(bme.readHumidity());
     Serial.println(" %");
+#endif
 
 
     Serial.println("Enable rotary encoder ISR:");

@@ -960,10 +960,12 @@ void setup() {
     tft.setTextColor(ILI9341_WHITE);
     for (uint8_t i=0; i<20; i++) {
 	delay(100);
+#ifndef WROVER
 	if (iotuz.read_encoder_button() == ENC_RELEASED || !digitalRead(JOYSTICK_BUT_PIN)) {
 	    Serial.println("Button clicked");
 	    break;
 	}
+#endif
     }
     Serial.println("Setting up Aiko event handlers");
 
