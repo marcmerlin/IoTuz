@@ -253,9 +253,7 @@ void joystick_draw_relative() {
     tft.fillCircle(int(pixel_x), int(pixel_y), 2, tenbitstocolor(update_cnt % 1024));
     // don't go all the way to the border, or the drawing will wrap to the other side of the screen.
     pixel_x = constrain(pixel_x + move_x, 2, 318);
-//#ifdef NEOPIXEL
-   pixel_y = constrain(pixel_y + move_y, 2, 238);
-//#endif
+    pixel_y = constrain(pixel_y + move_y, 2, 238);
 
     // Do not write the cursor values too often, it's too slow
     if (!(update_cnt++ % 32)) {
@@ -829,7 +827,11 @@ void loop() {
 	DISABLE_ROTARY_HANDLER = false;
 	DISABLE_OVERLAY_TEXT = false;
 
+	#ifdef WROVER
+	select = DEMOSAUCE;
+	#else
 	select = get_selection();
+	#endif
 	Serial.print("Got menu selection #");
 	Serial.println(select);
 	tft.fillScreen(ILI9341_BLACK);

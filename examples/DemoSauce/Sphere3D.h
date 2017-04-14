@@ -2,7 +2,7 @@
 #define SPHERE_3D_H__
 
 #include <Arduino.h>
-#include "Adafruit_ILI9341.h"
+// #include "Adafruit_ILI9341.h"
 #include "MathUtil.h"
 #include "BaseAnimation.h"
 

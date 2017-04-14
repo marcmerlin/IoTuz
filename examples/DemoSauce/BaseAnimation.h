@@ -2,7 +2,7 @@
 #define BASE_ANIMATION_H__
 
 #include <Arduino.h>
-#include "Adafruit_ILI9341.h"
+// #include "Adafruit_ILI9341.h"
 #include "MathUtil.h"
 #include "FrameParams.h"
 

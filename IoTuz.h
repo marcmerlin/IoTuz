@@ -1,8 +1,9 @@
-#define WROVER
-// MartyMacGyver/ESP32-Digital-RGB-LED-Drivers is not stable for me, so if you 
-// have crashes or problems, define this and RGB handling will switch to the adafruit
-// Neopixel library. That library is not very good (LEDs can flicker) but it's stable.
-#define NEOPIXEL
+// This code can work somewhat on the WROVER board, you can comment this out:
+//#define WROVER
+
+// MartyMacGyver/ESP32-Digital-RGB-LED-Drivers is better than the Adafruit 
+// Neopixel library. It flickers a bit, but if you want it, there you go:
+//#define NEOPIXEL
 
 #ifndef IOTUZ_H
 #define IOTUZ_H
@@ -16,7 +17,15 @@ using namespace Aiko;
 #include <Adafruit_GFX.h>
 // You need a recent github version of this library, including this patch:
 // https://github.com/adafruit/Adafruit_ILI9341/pull/26
+#ifdef WROVER
+#include "WROVER_KIT_LCD.h"
+// Some code uses the Adafruit_ILI9341 interface for tft, fix this here
+#define Adafruit_ILI9341 WROVER_KIT_LCD
+#define min(X, Y) (((X) < (Y)) ? (X) : (Y))
+#define max(X, Y) (((X) > (Y)) ? (X) : (Y))
+#else
 #include <Adafruit_ILI9341.h>
+#endif
 
 // https://learn.adafruit.com/adafruit-neopixel-uberguide/
 // Support for APA106 RGB LEDs
@@ -77,7 +86,7 @@ BME280: 0x77 (Temp/Humidity/Pressure)
 #define I2S_DAC_IN  17
 #define I2S_DCLK    5
 #define I2S_FS	    18
-#define UART)RX	    1
+#define UART_RX	    1
 #define UART_TX	    3
 
 // TFT + Touch Screen Setup Start
@@ -156,9 +165,11 @@ BME280: 0x77 (Temp/Humidity/Pressure)
 // Pixel Format: 0x5
 // Image Format: 0x0
 // Self Diagnostic: 0xC0
+extern WROVER_KIT_LCD tft;
+#else
+extern Adafruit_ILI9341 tft;
 #endif
 
-extern Adafruit_ILI9341 tft;
 #ifdef NEOPIXEL
 extern Adafruit_NeoPixel pixels;
 #else

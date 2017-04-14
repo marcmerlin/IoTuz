@@ -19,13 +19,13 @@ volatile int16_t encoder0Pos = 0;
 // These need to be global because all sketches use them as a global
 // tft adafruit library (games use tft2 a separate library, for which we skip the init
 // since the adafruit init works fine for both)
-// Whereas this shorter version works reliably for me
 #ifndef WROVER
+// software SPI ought to work on IoTuz, but I get a white screen sometimes if I use it.
+//Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC, SPI_MOSI, SPI_CLK, TFT_RST, SPI_MISO);
+// Whereas this shorter version works reliably for me
 Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC, TFT_RST);
 #else
-// software SPI ought to work on IoTuz, but I get a white screen sometimes if I use it.
-// It's for nwo required on WROVER
-Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC, SPI_MOSI, SPI_CLK, TFT_RST, SPI_MISO);
+WROVER_KIT_LCD tft;
 #endif
 
 
