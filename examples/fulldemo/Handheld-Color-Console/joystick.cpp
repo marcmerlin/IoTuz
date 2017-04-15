@@ -52,7 +52,7 @@ class Joystick
 
     static boolean fire()
     {
-      return (digitalRead(JOYSTICK_BUT_PIN) == LOW || iotuz.read_encoder_button() == ENC_DOWN);
+      return (digitalRead(JOYSTICK_BUT_PIN) == LOW || iotuz.butEnc() == BUT_DOWN);
     }
 
     static void waitForRelease()

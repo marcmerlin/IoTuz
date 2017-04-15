@@ -182,10 +182,10 @@ extern IRrecv irrecv;
 extern decode_results IR_result;
 
 typedef enum {
-    ENC_DOWN = 0,
-    ENC_PUSHED = 1,
-    ENC_UP = 2,
-    ENC_RELEASED = 3,
+    BUT_DOWN = 0,
+    BUT_PUSHED = 1,
+    BUT_UP = 2,
+    BUT_RELEASED = 3,
 
 } ButtState;
 
@@ -196,6 +196,13 @@ class IoTuz {
     // tft_width, tft_height, calculated in setup after tft init
     uint16_t tftw, tfth;
 
+    // Actual analog values, 0 to 4096
+    uint16_t joyValueX, joyValueY;
+    // massaged values to remove dead center and return -5 to +5
+    int8_t joyRelX, joyRelY;
+    bool joyBtn;
+
+
     // Buffer to store strings going to be printed on tft
     char tft_str[64];
 
@@ -204,8 +211,11 @@ class IoTuz {
     void i2cexp_set_bits(uint8_t);
     uint8_t i2cexp_read();
     int16_t read_encoder();
-    bool encoder_changed();
-    ButtState read_encoder_button();
+    int8_t encoder_changed();
+    ButtState butEnc();
+    ButtState butA();
+    ButtState butB();
+    void read_joystick(bool showdebug=false);
     float battery_level();
     void screen_bl(bool);
     void reset_tft();
@@ -217,6 +227,7 @@ class IoTuz {
   private:
     uint8_t _i2cexp;
     void pcf8574_write_(uint8_t);
+    ButtState _but(uint8_t);
 };
 
 

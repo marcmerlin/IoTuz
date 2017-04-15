@@ -152,36 +152,79 @@ int16_t IoTuz::read_encoder()
     return encoder0Pos;
 }
 
-bool IoTuz::encoder_changed() {
+int8_t IoTuz::encoder_changed() {
     static int16_t old_encoder0Pos = 0;
-    if (encoder0Pos != old_encoder0Pos)
-    {
-	old_encoder0Pos = encoder0Pos;
-	return true;
-    }
-    return false;
+    int8_t encoder0Diff = encoder0Pos - old_encoder0Pos;
+
+    old_encoder0Pos = encoder0Pos;
+    return encoder0Diff;
 }
 
 // There is no separate method to return button state changed
 // because this one already does it, look for PUSHED and RELEASED
-ButtState IoTuz::read_encoder_button() 
+ButtState IoTuz::_but(uint8_t button) 
 {
-    static bool butEnc = false;
-    uint8_t butt_state = i2cexp_read() & I2CEXP_ENC_BUT;
+    static bool but[9];
+    uint8_t butt_state = i2cexp_read() & button;
 
-    if (butt_state && !butEnc)
+    if (butt_state && !but[button])
     {
-	butEnc = true;
-	//Serial.println("Encoder Button Pushed");
-	return ENC_PUSHED;
+	but[button] = true;
+	Serial.println("Button Pushed");
+	return BUT_PUSHED;
     }
-    if (!butt_state && butEnc)
+    if (!butt_state && but[button])
     {
-	butEnc = false;
-	//Serial.println("Encoder Button Released");
-	return ENC_RELEASED;
+	but[button] = false;
+	Serial.println("Button Released");
+	return BUT_RELEASED;
     }
-    return (butt_state?ENC_DOWN:ENC_UP);
+    return (butt_state?BUT_DOWN:BUT_UP);
+}
+
+ButtState IoTuz::butEnc() 
+{
+    return(_but(I2CEXP_ENC_BUT));
+}
+
+ButtState IoTuz::butA() 
+{
+    return(_but(I2CEXP_A_BUT));
+}
+
+ButtState IoTuz::butB() 
+{
+    return(_but(I2CEXP_B_BUT));
+}
+
+
+void IoTuz::read_joystick(bool showdebug) 
+{
+    // X is wired in reverse.
+    joyValueX = 4096-analogRead(JOYSTICK_X_PIN);
+    joyValueY = analogRead(JOYSTICK_Y_PIN);
+    joyBtn = !digitalRead(JOYSTICK_BUT_PIN);
+
+    // Sadly on my board, the middle is 1785/1850 and not 2048/2048 and it's not the same
+    // on other boards, so add a huge dead center:
+    joyRelX = map(joyValueX, 0, 1600, -5, 0);
+    joyRelY = map(joyValueY, 0, 1600, -5, 0);
+    if (joyValueX > 1600) joyRelX = map(constrain(joyValueX, 2400, 4095), 2400, 4095, 0, 5);
+    if (joyValueY > 1600) joyRelY = map(constrain(joyValueY, 2400, 4095), 2400, 4095, 0, 5);
+
+    if (showdebug) {
+	// print the results to the serial monitor:
+	Serial.print("X Axis = ");
+	Serial.print(joyValueX);
+	Serial.print("/rel: ");
+	Serial.print(joyRelX);
+	Serial.print("\t Y Axis = ");
+	Serial.print(joyValueY);
+	Serial.print("/rel: ");
+	Serial.print(joyRelY);
+	Serial.print("\t Joy Button = ");
+	Serial.println(joyBtn);
+    }
 }
 
 // True turns the BL on

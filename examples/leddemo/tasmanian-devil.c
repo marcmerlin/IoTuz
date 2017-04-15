@@ -1,1 +1,0 @@
-../fulldemo/tasmanian-devil.c

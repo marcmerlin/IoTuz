@@ -12,11 +12,6 @@ IoTuz iotuz = IoTuz();
 
 #include "tasmanian-devil.c"
 
-bool butA   = false;
-bool butB   = false;
-bool butEnc = false;
-uint16_t joyValueX;
-uint16_t joyValueY;
 // When driving the LEDs directly, turn off the background handler that controls the LEDs
 bool DISABLE_RGB_HANDLER = false;
 // Same with rotary encoder
@@ -182,53 +177,35 @@ void finger_draw() {
     update_coordinates++;
 }
 
-void read_joystick(bool showdebug=true) {
-    // read the analog in value:
-    joyValueX = 4096-analogRead(JOYSTICK_X_PIN);
-    joyValueY = analogRead(JOYSTICK_Y_PIN);
-    bool joyBtnValue = !digitalRead(JOYSTICK_BUT_PIN);
-
-    if (showdebug) {
-	// print the results to the serial monitor:
-	Serial.print("X Axis = ");
-	Serial.print(joyValueX);
-	Serial.print("\t Y Axis = ");
-	Serial.print(joyValueY);
-	Serial.print("\t Joy Button = ");
-	Serial.println(joyBtnValue);
-    }
-}
-
 // Draw the dot directly to where the joystick is pointing.
 void joystick_draw() {
     static int8_t update_cnt = 0;
+    iotuz.read_joystick(true);
     // 4096 -> 320 (divide by 12.8) and -> 240 (divide by 17)
-    // Sadly on my board, the middle is 1785/1850 and not 2048/2048
-    read_joystick();
     // Add 2 because we don't want to write at 0 or it'll wrap to other side
-    uint16_t pixel_x = joyValueX/12.8+2;
-    uint16_t pixel_y = joyValueY/17+2;
+    uint16_t pixel_x = iotuz.joyValueX/12.8+2;
+    uint16_t pixel_y = iotuz.joyValueY/17+2;
     tft.fillCircle(pixel_x, pixel_y, 2, ILI9341_WHITE);
 
     // Do not write the cursor values too often, it's too slow
     if (!update_cnt++ % 16)
     {
-	sprintf(iotuz.tft_str, "%d > %d", joyValueX, pixel_x);
+	sprintf(iotuz.tft_str, "%d > %d", iotuz.joyValueX, pixel_x);
 	iotuz.tftprint(2, 0, 10, iotuz.tft_str);
-	sprintf(iotuz.tft_str, "%d > %d", joyValueY, pixel_y);
+	sprintf(iotuz.tft_str, "%d > %d", iotuz.joyValueY, pixel_y);
 	iotuz.tftprint(2, 1, 10, iotuz.tft_str);
     }
 }
 
 void rotary_encoder() {
     int16_t   encoder = iotuz.read_encoder();
-    ButtState encoder_button = iotuz.read_encoder_button();
+    ButtState encoder_button = iotuz.butEnc();
     int16_t offset;
 
-    if (iotuz.encoder_changed() || encoder_button == ENC_PUSHED || encoder_button == ENC_RELEASED) {
+    if (iotuz.encoder_changed() || encoder_button == BUT_PUSHED || encoder_button == BUT_RELEASED) {
 	offset = encoder % 320;
 	if (offset < 0) offset += 320;
-	if (encoder_button == ENC_RELEASED) offset = 0;
+	if (encoder_button == BUT_RELEASED) offset = 0;
 
 	sprintf(iotuz.tft_str, "%d/%d/%d", encoder_button, encoder, offset);
 	iotuz.tftprint(0, 0, 14, iotuz.tft_str);
@@ -241,14 +218,9 @@ void joystick_draw_relative() {
     static uint16_t update_cnt = 0;
     static float pixel_x = 160;
     static float pixel_y = 120;
-    // Sadly on my board, the middle is 1785/1850 and not 2048/2048
-    read_joystick();
-    float move_x = (joyValueX-2300.0)/2048;
-    float move_y = (joyValueY-1850.0)/2048;
-    int8_t intmove_x = map(joyValueX, 0, 1700, -5, 0);
-    int8_t intmove_y = map(joyValueY, 0, 1700, -5, 0);
-    if (joyValueX > 1700) intmove_x = map(constrain(joyValueX, 2300, 4096), 2300, 4096, 0, 5);
-    if (joyValueY > 1700) intmove_y = map(constrain(joyValueY, 2300, 4096), 2300, 4096, 0, 5);
+    iotuz.read_joystick(true);
+    float move_x = (iotuz.joyValueX-2300.0)/2048;
+    float move_y = (iotuz.joyValueY-1850.0)/2048;
 
     tft.fillCircle(int(pixel_x), int(pixel_y), 2, tenbitstocolor(update_cnt % 1024));
     // don't go all the way to the border, or the drawing will wrap to the other side of the screen.
@@ -257,9 +229,9 @@ void joystick_draw_relative() {
 
     // Do not write the cursor values too often, it's too slow
     if (!(update_cnt++ % 32)) {
-	sprintf(iotuz.tft_str, "%.1f (%d) > %d", move_x, intmove_x, int(pixel_x));
-	iotuz.tftprint(2, 0, 16, iotuz.tft_str);                        
-	sprintf(iotuz.tft_str, "%.1f (%d) > %d", move_y, intmove_y, int(pixel_y));
+	sprintf(iotuz.tft_str, "%.1f (%d) > %d", move_x, iotuz.joyRelX, int(pixel_x));
+	iotuz.tftprint(2, 0, 16, iotuz.tft_str);
+	sprintf(iotuz.tft_str, "%.1f (%d) > %d", move_y, iotuz.joyRelY, int(pixel_y));
 	iotuz.tftprint(2, 1, 16, iotuz.tft_str);
     }
 }
@@ -371,56 +343,11 @@ uint16_t tenbitstocolor(uint16_t tenbits) {
 }
 
 
-void scan_buttons(bool *need_select) {
-    uint8_t butt_state = iotuz.i2cexp_read();
-    *need_select = false;
-
-    if (butt_state & I2CEXP_A_BUT && !butA)
-    {
-	butA = true;
-	iotuz.reset_tft();
-	reset_textcoord();
-	iotuz.tftprint(0, 2, 0, "But A");
-    }
-    if (!(butt_state & I2CEXP_A_BUT) && butA)
-    {
-	butA = false;
-	iotuz.tftprint(0, 2, 5, "");
-    }
-    if (butt_state & I2CEXP_B_BUT && !butB)
-    {
-	butB = true;
-	iotuz.tftprint(0, 3, 0, "But B");
-	*need_select = true;
-	Serial.println("Button B pushed, going back to main menu");
-    }
-    if (!(butt_state & I2CEXP_B_BUT) && butB)
-    {
-	butB = false;
-	// When changing modes, this could delete a block over a new mode
-	// that draws a background.
-	//iotuz.tftprint(0, 3, 5, "");
-    }
-#if 0
-    if (butt_state & I2CEXP_ENC_BUT && !butEnc)
-    {
-	butEnc = true;
-	iotuz.tftprint(0, 4, 0, "Enc But");
-    }
-    if (!(butt_state & I2CEXP_ENC_BUT) && butEnc)
-    {
-	butEnc = false;
-	iotuz.tftprint(0, 4, 7, "");
-    }
-#endif
-}
-
 void reset_textcoord() {
     tft.setCursor(0, 0);
     tft.println("x=");
     tft.print("y=");
 }
-
 
 void draw_choices(void) {
 
@@ -462,29 +389,85 @@ void show_selected_box(uint8_t x, uint8_t y) {
     }
 }
 
-uint8_t get_selection(void) {
-    TS_Point p;
-    uint8_t x, y, select;
+// delete the selector from its own location and show at the new location
+void move_current_box(uint8_t x, uint8_t y) {
+    static uint8_t oldx,oldy = 0;
+    tft.drawRect(oldx*boxw+1, oldy*boxh+1, boxw-1, boxh-1, ILI9341_BLACK);
+    oldx = x; oldy = y;
+    tft.drawRect(x*boxw+1, y*boxh+1, boxw-1, boxh-1, ILI9341_YELLOW);
+}
 
-    Serial.println("Waiting for finger touch to select option");
+uint8_t get_selection() {
+    TS_Point p;
+    static int8_t x, y = 0;
+    static uint32_t lastMove = 0 ;
+    uint8_t select;
+    int8_t encoder;
+
+    // Draw initial selection box in case we're using joystick or rotary encoder to move
+    move_current_box(x, y);
+
+    Serial.println("Waiting for selection");
     do {
 	p = iotuz.get_touch();
+	iotuz.read_joystick();
+	if ((millis() - lastMove) > 250 && (iotuz.joyRelX || iotuz.joyRelY)) {
+	    // this call is to show debug values only when the joystick moves
+	    iotuz.read_joystick(true);
+	    Serial.print("OldX = ");
+	    Serial.print(x);
+	    Serial.print("\t OldY = ");
+	    Serial.print(y);
+	    if (iotuz.joyRelX) x = constrain(x + iotuz.joyRelX/abs(iotuz.joyRelX), 0, NHORIZ-1);
+	    if (iotuz.joyRelY) y = constrain(y + iotuz.joyRelY/abs(iotuz.joyRelY), 0, NVERT-1);
+	    Serial.print("\t NewX = ");
+	    Serial.print(x);
+	    Serial.print("\t NewY = ");
+	    Serial.println(y);
+	    move_current_box(x, y);
+	    lastMove = millis();
+	} else if ((millis() - lastMove) > 100 && (encoder = iotuz.encoder_changed()) &&
+		   iotuz.butEnc() == BUT_UP) {
+	    lastMove = millis();
+	    // each encoder click generates 4 state changes. We only move one box
+	    // because we don't want to have a selection stuck between 2 clicks.
+	    if (abs(encoder) > 1) {
+		// get -1 or +1 regardless of how many clicks were received.
+		encoder = encoder / abs(encoder);
+		x += encoder;
+		if (x < 0) { x = NHORIZ-1; y--; };
+		if (x >= NHORIZ) { x = 0; y++; };
+		if (y < 0) { y = NVERT-1; };
+		if (y >= NVERT) { y = 0; };
+		move_current_box(x, y);
+	    }
+	}   
 	// Ensure Aiko events can run.
 	Events.loop();
-    // at boot, I get a fake touch with pressure 1030
-    } while (!p.z);
+// pushing the rotary encoder is used to change the LED changing speed, so we use
+// butA or butB as a box selection, but those don't exist on WROVER, so we'll use
+// the rotary encoder push there instead.
+#ifdef WROVER
+    } while (!p.z && !iotuz.joyBtn && iotuz.butEnc() != BUT_PUSHED && 
+	     iotuz.butA() != BUT_PUSHED && iotuz.butB() != BUT_PUSHED);
+#else
+    } while (!p.z && !iotuz.joyBtn && 
+	     iotuz.butA() != BUT_PUSHED && iotuz.butB() != BUT_PUSHED);
+#endif
 
-    uint16_t pixel_x = p.x, pixel_y = p.y;
-    iotuz.touchcoord2pixelcoord(&pixel_x, &pixel_y, p.z);
+    if (p.z) {
+	uint16_t pixel_x = p.x, pixel_y = p.y;
+	iotuz.touchcoord2pixelcoord(&pixel_x, &pixel_y, p.z);
 
-    x = pixel_x/(tftw/NHORIZ);
-    y = pixel_y/(tfth/NVERT);
-    Serial.print("Got touch in box coordinates ");
-    Serial.print(x);
-    Serial.print("x");
-    Serial.print(y);
-    Serial.print(" pressure: ");
-    Serial.println(p.z);
+	x = pixel_x/(tftw/NHORIZ);
+	y = pixel_y/(tfth/NVERT);
+	Serial.print("Got touch in box coordinates ");
+	Serial.print(x);
+	Serial.print("x");
+	Serial.print(y);
+	Serial.print(" pressure: ");
+	Serial.println(p.z);
+    }
     show_selected_box(x, y);
 	
     return (x + y*NHORIZ);
@@ -650,12 +633,12 @@ void Rotary_Handler() {
     int16_t offset;
 
     if (! DISABLE_ROTARY_HANDLER) {
-	switch (iotuz.read_encoder_button()) {
-	case ENC_PUSHED:
+	switch (iotuz.butEnc()) {
+	case BUT_PUSHED:
 	    last_speed_encoder = iotuz.read_encoder();
 	    break;
 
-	case ENC_DOWN:
+	case BUT_DOWN:
 	    speed_encoder = iotuz.read_encoder();
 	    offset = (speed_encoder - last_speed_encoder)/4;
 	    last_speed_encoder = speed_encoder;
@@ -920,8 +903,10 @@ void loop() {
 	    return;
 	}
     }
-    // resets need_select to false unless 'B' is pushed.
-    scan_buttons(&need_select);
+    // reset need_select to false unless 'B' is pushed.
+    need_select = false;
+    if (iotuz.butB() == BUT_PUSHED) need_select = true;
+    if (iotuz.butA() == BUT_PUSHED) iotuz.reset_tft();
 
     // Run the Aiko event loop since it's not safe to run from an ISR
     Events.loop();
@@ -963,7 +948,7 @@ void setup() {
     for (uint8_t i=0; i<20; i++) {
 	delay(100);
 #ifndef WROVER
-	if (iotuz.read_encoder_button() == ENC_RELEASED || !digitalRead(JOYSTICK_BUT_PIN)) {
+	if (iotuz.butEnc() == BUT_RELEASED || !digitalRead(JOYSTICK_BUT_PIN)) {
 	    Serial.println("Button clicked");
 	    break;
 	}

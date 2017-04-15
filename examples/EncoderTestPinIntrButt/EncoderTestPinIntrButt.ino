@@ -33,19 +33,21 @@ void loop() {
     }
 
     // There is no debouncing here, delay at the end will help a bit, but is not foolproof
-    switch (iotuz.read_encoder_button()) {
-    case ENC_DOWN:
+    switch (iotuz.butEnc()) {
+    case BUT_DOWN:
 	// This would spam the console too much
 	//Serial.println("Encoder Button Down");
+	iotuz.tftprint(8, 1, 8, "Down");
 	break;
-    case ENC_PUSHED:
+    case BUT_PUSHED:
 	Serial.println("Encoder Button Just Pushed");
 	iotuz.tftprint(8, 1, 8, "Pushed");
 	break;
-    case ENC_UP:
+    case BUT_UP:
 	//Serial.println("Encoder Button Up");
+	iotuz.tftprint(8, 1, 8, "Up");
 	break;
-    case ENC_RELEASED:
+    case BUT_RELEASED:
 	Serial.println("Encoder Button Just Released");
 	iotuz.tftprint(8, 1, 6, "Released");
 	break;
@@ -53,7 +55,7 @@ void loop() {
 
 
     //Serial.println("Do other stuff in loop()");
-    delay(10);
+    delay(100);
 }
 
 // vim:sts=4:sw=4
