@@ -48,16 +48,20 @@ WROVER Support
 Very few people got an IoTuz board, so I ported this code to work on a WROVER board
 from expressif. While functionality will be limited without a touch screen, if you add
 a 2 axis joystick with a push button, you'll be able to use most of the code.
+
 Instead of a joystick, you can also use a rotary encoder with push button.
 I've tested with these:
 - https://tkkrlab.nl/wiki/Arduino_KY-040_Rotary_encoder_module
 - https://tkkrlab.nl/wiki/Arduino_KY-023_XY-axis_joystick_module
 
-Note that the joystick is likely not centered, which will mess up the main menu.
-I recommend you try examples/EncoderTestPinIntrButt.ino first (with serial output enabled)
-to get your rotary encoder and/or joystick configured.
+Note #1: you *must* uncomment WROVER in IoTuz.h as well as check the pin mappings there
+to connect at least a rotary encoder with push button, or a joystick.
 
-See IoTuz.h for pin mapping.
+Note #2: the joystick is likely not centered, which will mess up the main menu.
+I recommend you try examples/EncoderTestPinIntrButt.ino first (with serial output enabled)
+to get your rotary encoder and/or joystick configured.  
+If the joystick is reversed, please see void IoTuz::read_joystick in Iotuz.cpp and you'll likely
+also want to edit fulldemo/joystick.cpp for the 2 games.
 
 
 
