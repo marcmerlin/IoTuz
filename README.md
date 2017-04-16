@@ -95,6 +95,13 @@ See a few screenshots and videos:
 ![image](https://cloud.githubusercontent.com/assets/1369412/23584755/a81af3a4-011f-11e7-89b6-86de0ad00fcd.png)
 
 
+Short 2mn Video Summary:
+[![IoTuz 2mn Demo](https://cloud.githubusercontent.com/assets/1369412/25075092/d2f4a828-22c0-11e7-8145-6690db60127b.jpg)](https://youtu.be/Kvcvpdip12A "IoTuz 2mn Demo")
+
+Longer Video Demo: https://www.youtube.com/watch?v=562T4j7Pr1Q
+
+
+
 Credits
 -------
 In addition to the original LCA team who built IoTuz, I owe big thanks to:
