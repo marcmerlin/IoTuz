@@ -776,15 +776,19 @@ void LCD_PWM_Handler() {
 }
 
 void Battery_Handler() {
+#ifndef WROVER
     if (DISABLE_OVERLAY_TEXT) return;
     sprintf(iotuz.tft_str, "Bat:%4.2fV", iotuz.battery_level());
     iotuz.tftprint(44, 29, 9, iotuz.tft_str);
+#endif
 }
 
 void HumiTemp_Handler() {
+#ifndef WROVER
     if (DISABLE_OVERLAY_TEXT) return;
     sprintf(iotuz.tft_str, "%5.2fC hum:%2d%%", bme.readTemperature(), (int)bme.readHumidity());
     iotuz.tftprint(0, 29, 14, iotuz.tft_str);
+#endif
 }
 
 void loop() {

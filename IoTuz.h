@@ -1,5 +1,5 @@
 // This code can work somewhat on the WROVER board, you can comment this out:
-#define WROVER
+//#define WROVER
 
 // MartyMacGyver/ESP32-Digital-RGB-LED-Drivers is better than the Adafruit 
 // Neopixel library. It flickers a bit, but if you want it, there you go:
@@ -151,16 +151,16 @@ BME280: 0x77 (Temp/Humidity/Pressure)
 #define LCD_BL_CTR 5
 #define TFT_CS 0
 
-// Do not use pin 12, this blocks the board. Likely avoid 13/14 too (SPI)
-// 32, 33, 34 do not work either for IO input,
 //
 // You can plug a neopixel here:
 #define RGB_LED_PIN 0
 
 // Infrared is not needed either, but works for me.
 // You would have to enter your own hex codes in IRcodes.h
-#define IR_RX_PIN 2
+#define IR_RX_PIN 35
  
+// Do not use pin 12, this blocks the board. Likely avoid 13/14 too (SPI)
+// 32, 33, 34 do not seem to work either for IO input,
 // joystick is recommended to play the games
 #define JOYSTICK_BUT_PIN 27
 #define JOYSTICK_X_PIN 39
@@ -170,12 +170,17 @@ BME280: 0x77 (Temp/Humidity/Pressure)
 #define ENCODERB_PIN 26
 #define ENCODER_BUT_PIN 15
 
+// My WROVER board uses a ST7789V instead of ILI9341, the TFT init returns this:
 // ILI9341 Test!
-// Display Power Mode: 0x9C
-// MADCTL Mode: 0x48
-// Pixel Format: 0x5
+// Display Power Mode: 0xCE
+// MADCTL Mode: 0x0
+// Pixel Format: 0x2
 // Image Format: 0x0
-// Self Diagnostic: 0xC0
+// Self Diagnostic: 0xE0
+// Resolution: 320 x 240
+
+// ILI driver works on rover boards with an ILI chip, but newer boards use ST7789V
+// so use the WROVER driver that handles both.
 extern WROVER_KIT_LCD tft;
 #else
 extern Adafruit_ILI9341 tft;

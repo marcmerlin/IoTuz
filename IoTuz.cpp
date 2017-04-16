@@ -47,6 +47,7 @@ Adafruit_BME280 bme;
 XPT2046_Touchscreen ts(TS_CS_PIN);  // Param 2 - NULL - No interrupts)
 
 IRrecv irrecv(IR_RX_PIN);
+// Must be global to be passed to the IRRecord library.
 decode_results IR_result;
 
 // If enabled by the user, call every millisecond and run the Aiko 
@@ -421,9 +422,9 @@ IoTuz::IoTuz()
     pinMode(IR_RX_PIN, INPUT);
 #ifndef WROVER
     pinMode(IR_TX_PIN, OUTPUT);
+    pinMode(BAT_PIN, INPUT);
 #endif
 
-    pinMode(BAT_PIN, INPUT);
 }
 
 void IoTuz::begin()
@@ -517,7 +518,7 @@ void IoTuz::begin()
     attachInterrupt(ENCODERB_PIN, read_encoder_ISR, CHANGE);
 
     Serial.println("Enable IR receiver ISR:");
-    // Sigh, enabling this hardware interrupt makes I2C unreliable.
+    // Sigh, enabling this hardware interrupt made I2C unreliable.
     // Thankfully this HAL patch fixes the issue
     // https://github.com/espressif/arduino-esp32/issues/286
     irrecv.enableIRIn();
