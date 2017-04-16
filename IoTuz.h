@@ -140,7 +140,10 @@ BME280: 0x77 (Temp/Humidity/Pressure)
 // CS is then toggled manually before talking to the touch screen.
 #define TS_CS_PIN  33
 
-
+//
+// WROVER defines here, please connect at least a rotary encoder or joystick
+// or you will be stuck in the main menu with no way to move.
+// 
 #ifdef WROVER
 #define TFT_DC 21
 #define TFT_CS 22
