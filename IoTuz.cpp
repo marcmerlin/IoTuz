@@ -205,9 +205,13 @@ ButtState IoTuz::butB()
 
 void IoTuz::read_joystick(bool showdebug) 
 {
-    // X is wired in reverse.
+#ifdef WROVER
+    joyValueX = analogRead(JOYSTICK_X_PIN);
+    joyValueY = 4096-analogRead(JOYSTICK_Y_PIN);
+#else
     joyValueX = 4096-analogRead(JOYSTICK_X_PIN);
     joyValueY = analogRead(JOYSTICK_Y_PIN);
+#endif
     joyBtn = !digitalRead(JOYSTICK_BUT_PIN);
 
     // Sadly on my board, the middle is 1785/1850 and not 2048/2048 and it's not the same
