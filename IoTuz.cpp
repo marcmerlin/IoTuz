@@ -254,7 +254,7 @@ void IoTuz::reset_tft() {
 
 // maxlength is the maximum number of characters that need to be deleted before writing on top
 // 55x30 characters
-void IoTuz::tftprint(uint16_t x, uint16_t y, uint8_t maxlength, char *text) {
+void IoTuz::tftprint(uint8_t x, uint8_t y, uint8_t maxlength, char *text) {
     if (maxlength > 0) tft.fillRect(x*6, y*8, maxlength*6, 8, ILI9341_BLACK);
     tft.setCursor(x*6, y*8);
     tft.println(text);
@@ -263,14 +263,17 @@ void IoTuz::tftprint(uint16_t x, uint16_t y, uint8_t maxlength, char *text) {
 TS_Point IoTuz::get_touch() {
     // Clear (i.e. set) CS for TS before talking to it
     i2cexp_clear_bits(I2CEXP_TOUCH_CS);
-    // Calling getpoint calls SPI.beginTransaction with a speed of only 2MHz, so we need tohttps://github.com/marcmerlin/IoTuz
-    // reset the speed to something faster before talking to the screen again.https://github.com/marcmerlin/IoTuz
+    // Calling getpoint calls SPI.beginTransaction with a speed of only 2MHz, so we need to
+    // reset the speed to something faster before talking to the screen again.
     TS_Point p = ts.getPoint();
     // Then disable it again so that talking SPI to LCD doesn't reach TS
     i2cexp_set_bits(I2CEXP_TOUCH_CS);
+    
+    if (ts_revX) p.x = 4096 - p.x;
+    if (ts_revY) p.y = 4096 - p.y;
 
     // Tell the caller that the touch is bogus or none happened by setting z to 0.
-    if (p.z < MINPRESSURE || p.z > MAXPRESSURE) p.z = 0;
+    if (p.z < minpressure || p.z > maxpressure) p.z = 0;
     // I've seen bogus touches where both x and y were 0
     if (p.x == 0 && p.y == 0) p.z = 0;
 
@@ -292,12 +295,103 @@ void IoTuz::touchcoord2pixelcoord(uint16_t *pixel_x, uint16_t *pixel_y, uint16_t
     Serial.print(pixel_z);
     //*pixel_x = constrain((*pixel_x-320)/11.25, 0, 319);
     //*pixel_y = constrain((*pixel_y-200)/15, 0, 239);
-    *pixel_x = map(*pixel_x, TS_MINX, TS_MAXX, 0, tftw);
-    *pixel_y = map(*pixel_y, TS_MINY, TS_MAXY, 0, tfth);
+    *pixel_x = map(*pixel_x, ts_minX, ts_maxX, 0, tftw);
+    *pixel_y = map(*pixel_y, ts_minY, ts_maxY, 0, tfth);
     Serial.print(" to pixel coordinates ");
     Serial.print(*pixel_x);
     Serial.print("x");
     Serial.println(*pixel_y);
+}
+
+void IoTuz::_getMinMaxTS () {
+    TS_Point p;
+    uint16_t untouch = 0;
+
+    do {
+	p = get_touch();
+	sprintf(tft_str, "%d", p.x);
+	tftprint(18, 15, 4, tft_str);
+	sprintf(tft_str, "%d", p.y);
+	tftprint(30, 15, 4, tft_str);
+
+	if (p.x < ts_minX) { ts_minX = p.x; untouch = 0; }
+	if (p.y < ts_minY) { ts_minY = p.y; untouch = 0; }
+	if (p.x > ts_maxX) { ts_maxX = p.x; untouch = 0; }
+	if (p.y > ts_maxY) { ts_maxY = p.y; untouch = 0; }
+
+	sprintf(tft_str, "%d", ts_minX);
+	tftprint(21, 16, 4, tft_str);
+	sprintf(tft_str, "%d", ts_maxX);
+	tftprint(33, 16, 4, tft_str);
+	sprintf(tft_str, "%d", ts_minX);
+	tftprint(21, 17, 4, tft_str);
+	sprintf(tft_str, "%d", ts_maxX);
+	tftprint(33, 17, 4, tft_str);
+
+	if (!p.z) untouch++;
+	if (!(untouch % 100)) {
+	    Serial.print("Untouch count: ");
+	    Serial.println(untouch);
+	}
+
+    } while (untouch < 300);
+}
+
+void IoTuz::calibrateScreen() {
+    TS_Point p;
+
+    Serial.print("Old calibration data MinX: ");
+    Serial.print(ts_minX);
+    Serial.print(", MaxX: ");
+    Serial.print(ts_maxX);
+    Serial.print(", MinY: ");
+    Serial.print(ts_minY);
+    Serial.print(", MaxY: ");
+    Serial.print(ts_maxY);
+    Serial.println();
+    ts_minX = ts_minY = ts_maxX = ts_maxY = 2048;
+
+    tftprint(15, 12, 0, "Touch Screen Calibration");
+    tftprint(15, 13, 0, "Please Draw the 4 lines");
+    tftprint(15, 14, 0, " From center to corner ");
+    tftprint(15, 15, 0, "X: 0000     Y: 0000    ");
+    tftprint(15, 16, 0, "MinX: 0000, MaxX: 0000");
+    tftprint(15, 17, 0, "MinY: 0000, MaxY: 0000");
+
+    tft.drawLine(32 , 24, 0, 0, ILI9341_BLUE);
+    // Wait for touch
+    do { p = get_touch();} while (!p.z);
+    if (p.x > 2048) {
+	ts_revX = true;
+	tftprint(15, 18, 0, "X Reversed");
+    }
+    if (p.y > 2048) {
+	ts_revY = true;
+	tftprint(26, 18, 0, "Y Reversed");
+    }
+
+    // Now that ts_revXY are set, get_touch will invert returned
+    // coordinates to make handling easier.
+    _getMinMaxTS();
+    tft.drawLine(287 , 24, 319, 0, ILI9341_BLUE);
+    _getMinMaxTS();
+    tft.drawLine(32 , 215, 0, 239, ILI9341_BLUE);
+    _getMinMaxTS();
+    tft.drawLine(287 , 215, 319, 239, ILI9341_BLUE);
+    _getMinMaxTS();
+
+    Serial.print("New calibration data MinX: ");
+    Serial.print(ts_minX);
+    Serial.print(", MaxX: ");
+    Serial.print(ts_maxX);
+    Serial.print(", MinY: ");
+    Serial.print(ts_minY);
+    Serial.print(", MaxY: ");
+    Serial.print(ts_maxY);
+    Serial.println();
+
+    tftprint(30, 20, 0, "Done!");
+    delay(3000);
 }
 
 IoTuz::IoTuz()

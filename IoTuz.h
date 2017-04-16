@@ -1,5 +1,5 @@
 // This code can work somewhat on the WROVER board, you can comment this out:
-//#define WROVER
+#define WROVER
 
 // MartyMacGyver/ESP32-Digital-RGB-LED-Drivers is better than the Adafruit 
 // Neopixel library. It flickers a bit, but if you want it, there you go:
@@ -134,14 +134,6 @@ BME280: 0x77 (Temp/Humidity/Pressure)
 // This is all stored in i2cexp which we initialize to the bits used as input:
 #define I2CEXP_IMASK ( I2CEXP_ACCEL_INT + I2CEXP_A_BUT + I2CEXP_B_BUT + I2CEXP_ENC_BUT + I2CEXP_TOUCH_INT )
 
-// This is calibration data for the raw touch data to the screen coordinates
-#define TS_MINX 320
-#define TS_MINY 220
-#define TS_MAXX 3920
-#define TS_MAXY 3820
-#define MINPRESSURE 500
-#define MAXPRESSURE 3000
-
 // Touch screen select is on port expander line 6, not directly connected, so the library
 // cannot toggle it directly. It however requires a CS pin, so I'm giving it 33, a spare IO
 // pin so that it doesn't break anything else.
@@ -202,6 +194,17 @@ class IoTuz {
     int8_t joyRelX, joyRelY;
     bool joyBtn;
 
+    // Some touch screens have reversed coordinates. The original IoTuz did not
+    // but the compatible replacement screen I got, is reversed.
+    bool ts_revX = false;
+    bool ts_revY = false;
+    // This is calibration data for the raw touch data to the screen coordinates
+    uint16_t ts_minX=320;
+    uint16_t ts_minY=220;
+    uint16_t ts_maxX=3920;
+    uint16_t ts_maxY=3820;
+    uint16_t minpressure=500;
+    uint16_t maxpressure=3000;
 
     // Buffer to store strings going to be printed on tft
     char tft_str[64];
@@ -219,15 +222,17 @@ class IoTuz {
     float battery_level();
     void screen_bl(bool);
     void reset_tft();
-    void tftprint(uint16_t, uint16_t, uint8_t, char *);
+    void tftprint(uint8_t, uint8_t, uint8_t, char *);
     TS_Point get_touch();
     void touchcoord2pixelcoord(uint16_t *, uint16_t *, uint16_t);
+    void calibrateScreen();
     void begin();
 
   private:
     uint8_t _i2cexp;
     void pcf8574_write_(uint8_t);
     ButtState _but(uint8_t);
+    void _getMinMaxTS();
 };
 
 

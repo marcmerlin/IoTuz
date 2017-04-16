@@ -42,7 +42,7 @@ char* opt_name[NVERT][NHORIZ][3] = {
     { { "Select", "LEDs", "Color"}, { "Rotary", "For Bright", "LED Off"}, { "", "Rotary", "Encoder"}, { "", "Round", "Rects"}, { "Round", "Fill", "Rects"}, },
     { { "", "Text", ""}, { "", "Fill", ""}, { "", "Diagonal", "Lines"}, { "Horizon", "Vert", "Lines"}, { "", "Rectangle", ""}, },
     { { "", "Fill", "Rectangle"}, { "", "Circles", ""}, { "", "Fill", "Circles"}, { "", "Triangles", ""}, { "", "Fill", "Triangles"}, },
-    { { "", "Tetris", ""}, { "", "Breakout", ""}, { "", "DemoSauce", ""}, { "", "", ""}, { "", "", ""}, },
+    { { "", "Tetris", ""}, { "", "Breakout", ""}, { "", "DemoSauce", ""}, { "", "", ""}, { "Calibrate", "Touch", "Screen"}, },
 };
 // tft_width, tft_height, calculated in setup after tft init
 uint16_t tftw, tfth;
@@ -75,6 +75,7 @@ typedef enum {
     TETRIS = 20,
     BREAKOUT = 21,
     DEMOSAUCE = 22,
+    CALIBRATE = 24,
 } LCDtest;
 
 void lcd_test(LCDtest choice) {
@@ -364,6 +365,8 @@ void draw_choices(void) {
 		    tft.setTextColor(ILI9341_GREEN);
 		} else if (y*NHORIZ+x == 4 || y*NHORIZ+x == 7) {
 		    tft.setTextColor(ILI9341_BLUE);
+		} else if (y*NHORIZ+x == 24) {
+		    tft.setTextColor(ILI9341_YELLOW);
 		} else {
 		    tft.setTextColor(ILI9341_WHITE);
 		}
@@ -371,6 +374,7 @@ void draw_choices(void) {
 	    }
 	}
     }
+    tft.setTextColor(ILI9341_WHITE);
 
 }
 
@@ -399,7 +403,7 @@ void move_current_box(uint8_t x, uint8_t y) {
 
 uint8_t get_selection() {
     TS_Point p;
-    static int8_t x, y = 0;
+    static int8_t x = 4, y = 4;
     static uint32_t lastMove = 0 ;
     uint8_t select;
     int8_t encoder;
@@ -891,6 +895,10 @@ void loop() {
 	}
 	demosauce_loop();
 	break;
+    case CALIBRATE:
+	iotuz.calibrateScreen();
+	need_select = true;
+	return;
     default:
 	if (select >= 8) {
 	    DISABLE_OVERLAY_TEXT = true;
