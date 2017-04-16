@@ -3,6 +3,9 @@ IoTuz
 This is a library for driving the different hardware on the ESP32 based LCA 2017 IoTuz board:
 https://github.com/CCHS-Melbourne/iotuz-esp32-hardware
 
+Please see my blog post about the origin of the board and more screenshots/videos:
+http://marc.merlins.org/perso/arduino/post_2017-01-16_IoTuz-Driver-for-our-ESP32-board-built-at-Open-Hardware-Miniconf-at-Linux_Conf_au-2017.html
+
 ![tassie](https://cloud.githubusercontent.com/assets/1369412/23584813/3b8b49a8-0121-11e7-9833-13882e22dcd4.jpg)
 
 Supported hardware:
@@ -80,7 +83,14 @@ Required External libraries
 
 While I wrote all the menu system, IoTuz library and some of the driver support, fulldemo calls 
 external demo code written by others, this includes 2 games, and DemoSauce:
-See a few screenshots and videos: https://goo.gl/photos/bMVqdiAxDkEppuN88
+
+
+See a few screenshots and videos:
+![image](https://cloud.githubusercontent.com/assets/1369412/25074744/82b7619c-22b7-11e7-8e0c-99e2d5e20826.png)
+![image](https://cloud.githubusercontent.com/assets/1369412/25074745/89e531d8-22b7-11e7-9e5a-e26123518ce0.png)
+![image](https://cloud.githubusercontent.com/assets/1369412/25074746/9147f514-22b7-11e7-9125-09b0230f81fd.png)
+![image](https://cloud.githubusercontent.com/assets/1369412/25074748/991a8cca-22b7-11e7-9467-843c9a7dc7df.png)
+![image](https://cloud.githubusercontent.com/assets/1369412/25074751/9fe893bc-22b7-11e7-91ac-cc3f231a4338.png)
 ![image](https://cloud.githubusercontent.com/assets/1369412/23584753/a0dd0492-011f-11e7-9898-dd428205e552.png)
 ![image](https://cloud.githubusercontent.com/assets/1369412/23584755/a81af3a4-011f-11e7-89b6-86de0ad00fcd.png)
 
