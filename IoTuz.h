@@ -1,5 +1,5 @@
 // This code can work somewhat on the WROVER board, you can comment this out:
-//#define WROVER
+#define WROVER
 
 // MartyMacGyver/ESP32-Digital-RGB-LED-Drivers is better than the Adafruit 
 // Neopixel library. It flickers a bit, but if you want it, there you go:
@@ -15,8 +15,6 @@
 using namespace Aiko;
 
 #include <Adafruit_GFX.h>
-// You need a recent github version of this library, including this patch:
-// https://github.com/adafruit/Adafruit_ILI9341/pull/26
 #ifdef WROVER
 #include "WROVER_KIT_LCD.h"
 // Some code uses the Adafruit_ILI9341 interface for tft, fix this here
@@ -24,6 +22,8 @@ using namespace Aiko;
 #define min(X, Y) (((X) < (Y)) ? (X) : (Y))
 #define max(X, Y) (((X) > (Y)) ? (X) : (Y))
 #else
+// You need a recent github version of this library, including this patch:
+// https://github.com/adafruit/Adafruit_ILI9341/pull/26
 #include <Adafruit_ILI9341.h>
 #endif
 
@@ -149,8 +149,27 @@ BME280: 0x77 (Temp/Humidity/Pressure)
 #define SPI_MOSI 23
 #define SPI_CLK 19
 #define LCD_BL_CTR 5
-#define RGB_LED_PIN 0
 #define TFT_CS 0
+
+// Do not use pin 12, this blocks the board. Likely avoid 13/14 too (SPI)
+// 32, 33, 34 do not work either for IO input,
+//
+// You can plug a neopixel here:
+#define RGB_LED_PIN 0
+
+// Infrared is not needed either, but works for me.
+// You would have to enter your own hex codes in IRcodes.h
+#define IR_RX_PIN 2
+ 
+// joystick is recommended to play the games
+#define JOYSTICK_BUT_PIN 27
+#define JOYSTICK_X_PIN 39
+#define JOYSTICK_Y_PIN 36
+// but you can navigate the menu with a rotary encoder instead
+#define ENCODERA_PIN 25
+#define ENCODERB_PIN 26
+#define ENCODER_BUT_PIN 15
+
 // ILI9341 Test!
 // Display Power Mode: 0x9C
 // MADCTL Mode: 0x48

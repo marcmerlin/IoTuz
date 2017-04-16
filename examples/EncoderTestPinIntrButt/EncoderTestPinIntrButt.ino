@@ -53,6 +53,7 @@ void loop() {
 	break;
     }
 
+    iotuz.read_joystick(true);
 
     //Serial.println("Do other stuff in loop()");
     delay(100);

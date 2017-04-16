@@ -816,11 +816,7 @@ void loop() {
 	DISABLE_ROTARY_HANDLER = false;
 	DISABLE_OVERLAY_TEXT = false;
 
-	#ifdef WROVER
-	select = DEMOSAUCE;
-	#else
 	select = get_selection();
-	#endif
 	Serial.print("Got menu selection #");
 	Serial.println(select);
 	tft.fillScreen(ILI9341_BLACK);
@@ -918,6 +914,12 @@ void loop() {
     need_setup = false;
     if (iotuz.butB() == BUT_PUSHED) need_select = true;
     if (iotuz.butA() == BUT_PUSHED) { iotuz.reset_tft(); need_setup = true; };
+#ifdef WROVER
+    iotuz.read_joystick(false);
+    if (iotuz.joyBtn) need_select = true;
+    // Give a chance to release the push button before displaying the menu again.
+    if (need_select) delay(500);
+#endif
 
     // Run the Aiko event loop since it's not safe to run from an ISR
     Events.loop();

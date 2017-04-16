@@ -165,7 +165,11 @@ int8_t IoTuz::encoder_changed() {
 ButtState IoTuz::_but(uint8_t button) 
 {
     static bool but[9];
+#ifdef WROVER
+    uint8_t butt_state = !digitalRead(ENCODER_BUT_PIN);
+#else
     uint8_t butt_state = i2cexp_read() & button;
+#endif
 
     if (butt_state && !but[button])
     {
@@ -415,7 +419,9 @@ IoTuz::IoTuz()
     pinMode(TFT_RST, OUTPUT);
 
     pinMode(IR_RX_PIN, INPUT);
+#ifndef WROVER
     pinMode(IR_TX_PIN, OUTPUT);
+#endif
 
     pinMode(BAT_PIN, INPUT);
 }
