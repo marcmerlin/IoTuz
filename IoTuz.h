@@ -1,5 +1,5 @@
 // This code can work somewhat on the WROVER board, you can comment this out:
-#define WROVER
+//#define WROVER
 
 // MartyMacGyver/ESP32-Digital-RGB-LED-Drivers is better than the Adafruit 
 // Neopixel library. It flickers a bit, but if you want it, there you go:

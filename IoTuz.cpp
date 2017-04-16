@@ -323,9 +323,9 @@ void IoTuz::_getMinMaxTS () {
 	tftprint(21, 16, 4, tft_str);
 	sprintf(tft_str, "%d", ts_maxX);
 	tftprint(33, 16, 4, tft_str);
-	sprintf(tft_str, "%d", ts_minX);
+	sprintf(tft_str, "%d", ts_minY);
 	tftprint(21, 17, 4, tft_str);
-	sprintf(tft_str, "%d", ts_maxX);
+	sprintf(tft_str, "%d", ts_maxY);
 	tftprint(33, 17, 4, tft_str);
 
 	if (!p.z) untouch++;

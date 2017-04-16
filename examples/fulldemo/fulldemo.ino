@@ -789,6 +789,8 @@ void HumiTemp_Handler() {
 
 void loop() {
     static bool need_select = true;
+    // Some demos need to draw an initial screen.
+    static bool need_setup;
     static uint8_t select;
 
     // See lcd_flash's longjmp and
@@ -822,17 +824,19 @@ void loop() {
 	Serial.print("Got menu selection #");
 	Serial.println(select);
 	tft.fillScreen(ILI9341_BLACK);
+	need_select = false;
+	need_setup = true;
     }
 
     // Ok, this is tricky. the last row of demos does not come back through the
     // loop. After they run, Aiko events stop. In turn backlight PWM stops too
     // so we make sure it didn't just stop on an LCD off event.
-    if (select >= 20 and need_select)iotuz.screen_bl (true);
+    if (select >= 20 and need_setup)iotuz.screen_bl (true);
 
     // The first 4 demos display x/y coordinate text in the upper left corner
-    // After the first time around the loop, need_select gets reset to false
+    // After the first time around the loop, need_setup gets reset to false
     // and the coordinate text is not rewritten (to save screen drawing time)
-    if (select <= 3 and need_select) reset_textcoord();
+    if (select <= 3 and need_setup) reset_textcoord();
     switch (select) {
     case FINGERPAINT:
 	DISABLE_OVERLAY_TEXT = true;
@@ -841,7 +845,7 @@ void loop() {
     case TOUCHPAINT:
 	DISABLE_OVERLAY_TEXT = true;
 	// First time around the loop, draw a color selection circle
-	if (need_select) touchpaint_setup();
+	if (need_setup) touchpaint_setup();
 	touchpaint_loop();
 	break;
     case JOYABS:
@@ -856,7 +860,7 @@ void loop() {
     case COLORLED:
 	// First time around the loop, draw a color selection circle
 	// and turn off RGB handler
-	if (need_select) { 
+	if (need_setup) { 
 	    draw_color_selector();
 	    DISABLE_RGB_HANDLER = true;
 	    DISABLE_OVERLAY_TEXT = true;
@@ -870,7 +874,7 @@ void loop() {
 	return;
 	break;
     case ROTARTYENC:
-	if (need_select) {
+	if (need_setup) {
 	    show_logo();
 	    DISABLE_ROTARY_HANDLER = true;
 	    DISABLE_OVERLAY_TEXT = true;
@@ -879,17 +883,17 @@ void loop() {
 	break;
     case TETRIS:
 	// First time around the loop, draw a color selection circle
-	if (need_select) tetris_setup();
+	if (need_setup) tetris_setup();
 	tetris_loop();
 	break;
     case BREAKOUT:
 	// First time around the loop, draw a color selection circle
-	if (need_select) breakout_setup();
+	if (need_setup) breakout_setup();
 	breakout_loop();
 	break;
     case DEMOSAUCE:
 	// First time around the loop, draw a color selection circle
-	if (need_select) {
+	if (need_setup) {
 	    DISABLE_OVERLAY_TEXT = true;
 	    demosauce_setup();
 	}
@@ -911,10 +915,9 @@ void loop() {
 	    return;
 	}
     }
-    // reset need_select to false unless 'B' is pushed.
-    need_select = false;
+    need_setup = false;
     if (iotuz.butB() == BUT_PUSHED) need_select = true;
-    if (iotuz.butA() == BUT_PUSHED) iotuz.reset_tft();
+    if (iotuz.butA() == BUT_PUSHED) { iotuz.reset_tft(); need_setup = true; };
 
     // Run the Aiko event loop since it's not safe to run from an ISR
     Events.loop();
