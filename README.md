@@ -6,6 +6,8 @@ https://github.com/CCHS-Melbourne/iotuz-esp32-hardware
 Please see my blog post about the origin of the board and more screenshots/videos:
 http://marc.merlins.org/perso/arduino/post_2017-01-16_IoTuz-Driver-for-our-ESP32-board-built-at-Open-Hardware-Miniconf-at-Linux_Conf_au-2017.html
 
+Now, this code has a lot of dependencies. You should be able to gather them all and make it work, but if you want a shortcut, see the release page for a precompiled binary (you'll still need to have your arduino environment setup with an up to date arduino-esp32 environment and be able to compile/upload some hello world before trying this method): https://github.com/marcmerlin/IoTuz/releases (there is more help below on how to setup the environment).
+
 ![tassie](https://cloud.githubusercontent.com/assets/1369412/23584813/3b8b49a8-0121-11e7-9833-13882e22dcd4.jpg)
 
 Supported hardware:
