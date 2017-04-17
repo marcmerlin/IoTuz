@@ -68,6 +68,9 @@ to get your rotary encoder and/or joystick configured.
 If the joystick is reversed, please see void IoTuz::read_joystick in Iotuz.cpp and you'll likely
 also want to edit fulldemo/joystick.cpp for the 2 games.
 
+Note #3: If you have a newer WROVER board with ST7789V chipset, the 2 games will not work because they
+use a custom TFT2 library. You can fix this by porting them to the Adafruit API and they'll work with 
+WROVER/ST7789V .
 
 
 Required External libraries
