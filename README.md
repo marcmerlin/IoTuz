@@ -54,6 +54,8 @@ Very few people got an IoTuz board, so I ported this code to work on a WROVER bo
 from expressif. While functionality will be limited without a touch screen, if you add
 a 2 axis joystick with a push button, you'll be able to use most of the code.
 
+See this blog post: http://marc.merlins.org/perso/arduino/post_2017-04-16_IoTuz-Driver-ported-to-Expressif-WROVER-board.html
+
 Instead of a joystick, you can also use a rotary encoder with push button.
 I've tested with these:
 - https://tkkrlab.nl/wiki/Arduino_KY-040_Rotary_encoder_module
