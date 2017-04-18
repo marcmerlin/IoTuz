@@ -12,8 +12,6 @@ Now, this code has a lot of dependencies. You should be able to gather them all 
 
 Supported hardware:
 - TFT (hw SPI)
-  Make sure your library has this patch 
-  https://github.com/adafruit/Adafruit_ILI9341/blob/master/Adafruit_ILI9341.cpp#L98
 - Touchscreen (hw SPI)
 - Replacement touchscreen support (calibration option in case your touchscreen is reversed or has different calibration)
 - Rotary Encoder via pin interrupt driven driver
