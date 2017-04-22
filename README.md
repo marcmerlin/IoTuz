@@ -12,8 +12,6 @@ Now, this code has a lot of dependencies. You should be able to gather them all 
 
 Supported hardware:
 - TFT (hw SPI)
-  Make sure your library has this patch 
-  https://github.com/adafruit/Adafruit_ILI9341/blob/master/Adafruit_ILI9341.cpp#L98
 - Touchscreen (hw SPI)
 - Replacement touchscreen support (calibration option in case your touchscreen is reversed or has different calibration)
 - Rotary Encoder via pin interrupt driven driver
@@ -53,6 +51,8 @@ WROVER Support
 Very few people got an IoTuz board, so I ported this code to work on a WROVER board
 from expressif. While functionality will be limited without a touch screen, if you add
 a 2 axis joystick with a push button, you'll be able to use most of the code.
+
+See this blog post: http://marc.merlins.org/perso/arduino/post_2017-04-16_IoTuz-Driver-ported-to-Expressif-WROVER-board.html
 
 Instead of a joystick, you can also use a rotary encoder with push button.
 I've tested with these:
