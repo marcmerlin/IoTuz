@@ -140,7 +140,6 @@ uint8_t IoTuz::i2cexp_read()
     // For read to work, we must have sent 1 bits on the ports that get used as input
     // This is done by i2cexp_clear_bits called in setup.
     Wire.requestFrom(I2C_EXPANDER, 1);	// FIXME: deal with returned error here?
-    while (Wire.available() < 1) ;
     uint8_t read = ~Wire.read();	// Apparently one has to invert the bits read
     // When no buttons are pushed, this returns 0x91, which includes some ports
     // we use as output, so we do need to filter out the ports used as read.
